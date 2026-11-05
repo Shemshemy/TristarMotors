@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: tristar-motors
+    runtime: node
+    plan: starter
+    rootDir: dealer-platform
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRISTAR_DATA_DIR
+        value: /var/data
+      - key: TRISTAR_ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: tristar-data
+      mountPath: /var/data
+      sizeGB: 1

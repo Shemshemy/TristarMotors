@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f6f4">
+  <meta name="description" content="Explore the details of a carefully selected vehicle from Tristar Motors.">
+  <title>Vehicle details | Tristar Motors</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <div class="topline"><span>Considered cars. Exceptional journeys.</span><a href="index.html#contact">Speak to our team <span aria-hidden="true">↗</span></a></div>
+  <header class="site-header" id="top">
+    <a class="brand" href="index.html" aria-label="Tristar Motors home"><img src="Logos/TristarMotors.png" alt="Tristar Motors"></a>
+    <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a class="active" href="index.html#inventory">Find a car</a><a href="index.html#experience">Our experience</a><a href="index.html#sell">Sell your car</a><a href="index.html#contact">Contact</a></nav>
+    <div class="header-actions"><a class="icon-button saved-link" href="index.html?saved=1#inventory" aria-label="Show saved cars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg><span class="saved-count">0</span></a><a class="button button-dark button-small" href="index.html#contact">Get in touch <span aria-hidden="true">↗</span></a></div>
+  </header>
+  <main id="vehicle-detail" class="vehicle-page">
+    <div class="detail-breadcrumb"><a href="index.html">Home</a><span>/</span><a href="index.html#inventory">The collection</a><span>/</span><span id="detail-make">Vehicle</span></div>
+    <section class="detail-layout">
+      <div class="detail-gallery">
+        <div class="detail-image-wrap"><img id="detail-image" alt="" fetchpriority="high"><span class="detail-photo-label">TRISTAR SELECT</span><button class="save-car detail-save" id="detail-save" type="button" aria-label="Save this car" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg></button></div>
+        <div class="detail-gallery-caption"><span>Exterior view</span><span>Representative photography</span></div>
+      </div>
+      <div class="detail-summary">
+        <p class="eyebrow"><span class="eyebrow-line"></span> SELECTED FOR YOU</p>
+        <h1 id="detail-title">Vehicle model</h1>
+        <p class="detail-subtitle">An exceptional example, ready for its next chapter.</p>
+        <div class="detail-price" id="detail-price"></div>
+        <div class="detail-status"><span class="note-dot"></span> Available now <span class="status-separator">·</span> Nairobi, Kenya</div>
+        <p class="detail-description" id="detail-description"></p>
+        <div class="detail-cta"><a class="button button-blue" id="detail-inquiry" href="mailto:hello@tristarmotors.co.ke">Enquire about this car <span aria-hidden="true">↗</span></a><a class="button button-outline" href="tel:+254700000000">Call our team</a></div>
+        <div class="spec-block"><div class="spec-heading"><span>At a glance</span><span>01 — 06</span></div><div class="spec-grid">
+          <div class="spec-item"><span>Odometer</span><strong id="detail-mileage"></strong></div><div class="spec-item"><span>Body style</span><strong id="detail-type"></strong></div>
+          <div class="spec-item"><span>Transmission</span><strong id="detail-transmission"></strong></div><div class="spec-item"><span>Fuel</span><strong id="detail-fuel"></strong></div>
+          <div class="spec-item"><span>Engine</span><strong id="detail-engine"></strong></div><div class="spec-item"><span>Exterior colour</span><strong id="detail-color"></strong></div>
+        </div></div>
+        <div class="detail-assurance"><span class="assurance-icon">✓</span><span><strong>A more considered purchase.</strong><small>Talk with our team about history, inspection and next steps.</small></span><a href="index.html#experience" aria-label="Learn about the Tristar experience">↗</a></div>
+      </div>
+    </section>
+    <section class="detail-contact"><div><p class="eyebrow">YOUR NEXT DRIVE STARTS HERE</p><h2>Let's make it <em>yours.</em></h2></div><a class="button button-dark" id="detail-inquiry-bottom" href="#">Speak with Tristar <span aria-hidden="true">↗</span></a></section>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom"><span>© 2026 Tristar Motors. All rights reserved.</span><span>Thoughtfully driven.</span><a href="index.html">Back to collection ↑</a></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="site.js"></script>
+  <script>document.querySelector('#detail-inquiry-bottom').href=document.querySelector('#detail-inquiry').href;</script>
+</body>
+</html>

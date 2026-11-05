@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f4f2">
+  <title>Vehicle 360° Viewer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #171819;
+      background: #f4f4f2;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: clamp(16px, 4vw, 56px); }
+
+    .vdp { width: min(100%, 1120px); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #747779;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.65rem); letter-spacing: -.045em; }
+    .subtitle { margin: 9px 0 24px; color: #717577; font-size: .98rem; }
+
+    .viewer-card {
+      overflow: hidden;
+      border: 1px solid #e7e7e4;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgb(18 22 24 / 7%);
+    }
+    .viewer-stage {
+      position: relative;
+      display: grid;
+      min-height: clamp(290px, 58vw, 620px);
+      place-items: center;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 50% 70%, #fff 0, #fbfbfa 48%, #f2f3f2 100%);
+      cursor: grab;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .viewer-stage:active { cursor: grabbing; }
+    .viewer-stage:focus-visible { outline: 3px solid #606367; outline-offset: -5px; }
+    .vehicle-frame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      object-fit: contain;
+      padding: clamp(20px, 5vw, 56px);
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+    .viewer-loading {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(230px, 55%);
+      color: #747779;
+      font-size: .75rem;
+      text-align: center;
+    }
+    .progress-track { height: 3px; margin-top: 8px; overflow: hidden; border-radius: 3px; background: #e5e6e4; }
+    .progress-fill { width: 0; height: 100%; border-radius: inherit; background: #383b3d; transition: width .15s ease; }
+    .viewer-hint {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border: 1px solid rgb(225 226 224 / 85%);
+      border-radius: 999px;
+      background: rgb(255 255 255 / 88%);
+      color: #55595b;
+      font-size: .75rem;
+      white-space: nowrap;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+    .hint-icon { font-size: 1rem; line-height: 1; }
+    .viewer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 15px clamp(16px, 3vw, 28px);
+      border-top: 1px solid #ededeb;
+    }
+    .frame-count { min-width: 62px; color: #6e7274; font-size: .8rem; font-variant-numeric: tabular-nums; }
+    .viewer-controls { display: flex; align-items: center; gap: 9px; }
+    .control-button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid #e3e4e2;
+      border-radius: 50%;
+      background: #f7f7f6;
+      color: #252728;
+      font: inherit;
+      cursor: pointer;
+      transition: background .18s ease, transform .18s ease;
+    }
+    .control-button:hover { background: #ececea; }
+    .control-button:active { transform: scale(.96); }
+    .control-button:focus-visible { outline: 3px solid #777b7d; outline-offset: 2px; }
+    .control-button svg { width: 18px; height: 18px; }
+    .drag-label { color: #6e7274; font-size: .8rem; }
+
+    @media (max-width: 520px) {
+      body { padding: 22px 14px; }
+      .subtitle { margin-bottom: 18px; }
+      .viewer-card { border-radius: 19px; }
+      .viewer-stage { min-height: 68vw; max-height: 430px; }
+      .viewer-hint { top: 12px; font-size: .7rem; }
+      .viewer-footer { padding: 12px 14px; }
+      .drag-label { display: none; }
+      .control-button { width: 40px; height: 40px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="vdp">
+    <p class="eyebrow">Vehicle details</p>
+    <h1>2025 BMW 5 Series</h1>
+    <p class="subtitle">Take a closer look from every angle.</p>
+
+    <section class="viewer-card" aria-label="Interactive 360 degree vehicle view">
+      <div class="viewer-stage" id="vehicle-viewer" tabindex="0" role="region"
+           aria-label="Vehicle 360 viewer. Drag left or right, or use the arrow keys to rotate.">
+        <img class="vehicle-frame" id="vehicle-frame" alt="2025 BMW 5 Series, exterior view" draggable="false">
+        <div class="viewer-hint" aria-hidden="true"><span class="hint-icon">↔</span> Drag to explore</div>
+        <div class="viewer-loading" id="viewer-loading" aria-live="polite">
+          <span id="loading-label">Loading vehicle views…</span>
+          <div class="progress-track"><div class="progress-fill" id="loading-progress"></div></div>
+        </div>
+      </div>
+      <div class="viewer-footer">
+        <span class="frame-count" id="frame-count" aria-live="polite">01 / 24</span>
+        <span class="drag-label">Drag or swipe to rotate</span>
+        <div class="viewer-controls" aria-label="Rotate vehicle">
+          <button class="control-button" id="rotate-left" type="button" aria-label="Rotate left" title="Rotate left">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="control-button" id="rotate-right" type="button" aria-label="Rotate right" title="Rotate right">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Replace these paths with your 24 sequential, same-size exterior frames.
+    const vehicleFrames = Array.from({ length: 24 }, (_, index) =>
+      `/assets/bmw-5-series-360/frame-${String(index + 1).padStart(2, "0")}.webp`
+    );
+
+    const stage = document.querySelector("#vehicle-viewer");
+    const image = document.querySelector("#vehicle-frame");
+    const count = document.querySelector("#frame-count");
+    const loading = document.querySelector("#viewer-loading");
+    const loadingLabel = document.querySelector("#loading-label");
+    const progress = document.querySelector("#loading-progress");
+
+    if (vehicleFrames.length !== 24) {
+      throw new Error(`The viewer needs 24 frames; received ${vehicleFrames.length}.`);
+    }
+
+    let currentFrame = 0;
+    let pointerStartX = 0;
+    let dragRemainder = 0;
+    let isDragging = false;
+    const pixelsPerFrame = 9; // Lower this to make dragging more sensitive.
+    const loadedFrames = new Array(vehicleFrames.length);
+    let loadedCount = 0;
+
+    function showFrame(index) {
+      currentFrame = (index + vehicleFrames.length) % vehicleFrames.length;
+      if (loadedFrames[currentFrame]?.complete && loadedFrames[currentFrame].naturalWidth) {
+        image.src = loadedFrames[currentFrame].src;
+      }
+      count.textContent = `${String(currentFrame + 1).padStart(2, "0")} / ${vehicleFrames.length}`;
+    }
+
+    // Preload all 24 frames so rotation stays responsive after the initial load.
+    vehicleFrames.forEach((url, index) => {
+      const frame = new Image();
+      loadedFrames[index] = frame;
+      frame.onload = () => {
+        loadedCount += 1;
+        if (index === 0) image.src = frame.src;
+        progress.style.width = `${(loadedCount / vehicleFrames.length) * 100}%`;
+        loadingLabel.textContent = loadedCount === vehicleFrames.length
+          ? "Ready to explore"
+          : `Loading vehicle views… ${loadedCount} / ${vehicleFrames.length}`;
+        if (loadedCount === vehicleFrames.length) {
+          window.setTimeout(() => { loading.hidden = true; }, 450);
+        }
+      };
+      frame.onerror = () => {
+        loadedCount += 1;
+        progress.style.width = `${(loadedCount / vehicleFrames.length) * 100}%`;
+        loadingLabel.textContent = `Could not load frame ${index + 1}. Check the image URL.`;
+      };
+      frame.decoding = "async";
+      frame.src = url;
+    });
+
+    stage.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      isDragging = true;
+      pointerStartX = event.clientX;
+      dragRemainder = 0;
+      stage.setPointerCapture(event.pointerId);
+    });
+
+    stage.addEventListener("pointermove", (event) => {
+      if (!isDragging) return;
+      dragRemainder += event.clientX - pointerStartX;
+      pointerStartX = event.clientX;
+      const steps = Math.trunc(dragRemainder / pixelsPerFrame);
+      if (steps !== 0) {
+        showFrame(currentFrame - steps);
+        dragRemainder -= steps * pixelsPerFrame;
+      }
+    });
+
+    function endDrag() { isDragging = false; }
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
+    stage.addEventListener("lostpointercapture", endDrag);
+
+    document.querySelector("#rotate-left").addEventListener("click", () => showFrame(currentFrame - 1));
+    document.querySelector("#rotate-right").addEventListener("click", () => showFrame(currentFrame + 1));
+    stage.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        showFrame(currentFrame + (event.key === "ArrowLeft" ? -1 : 1));
+      }
+    });
+  </script>
+</body>
+</html>
