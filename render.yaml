@@ -13,7 +13,7 @@ services:
       - key: TRISTAR_DATA_DIR
         value: /var/data
       - key: TRISTAR_ADMIN_PASSWORD
-        sync: false
+        generateValue: true
     disk:
       name: tristar-data
       mountPath: /var/data
