@@ -15,13 +15,6 @@ const DEALER = {
 let vehicles = [];
 let inventoryUnavailable = false;
 
-function syncMobileViewportWidth() {
-  document.documentElement.style.setProperty("--mobile-viewport-width", `${window.innerWidth}px`);
-}
-
-syncMobileViewportWidth();
-window.addEventListener("resize", syncMobileViewportWidth, { passive: true });
-
 async function loadVehicles() {
   let cars;
   try {

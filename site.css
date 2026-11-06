@@ -2129,12 +2129,11 @@ body:has(#vehicle-detail) .floating-wa,
   }
 
   html {
-    width: var(--mobile-viewport-width, 100vw);
     scrollbar-width: none;
   }
 
   body {
-    width: var(--mobile-viewport-width, 100vw);
+    width: 100vw;
     overflow-x: clip;
     scrollbar-width: none;
   }
