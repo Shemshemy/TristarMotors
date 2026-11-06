@@ -263,64 +263,6 @@ h1 em, h2 em, h3 em {
 }
 
 /* ==========================================================================
-   TOPLINE ANNOUNCEMENT BAR
-   ========================================================================== */
-.topline {
-  position: relative;
-  z-index: 101;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 38px;
-  padding: 0 max(28px, calc((100% - 1240px) / 2));
-  background: #0f1114;
-  color: #c4c7cc;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.topline-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.topline-left a:hover {
-  color: #ffffff;
-}
-
-.topline-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(197, 160, 89, 0.18);
-  color: var(--gold-light);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.topline-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.topline-right a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #ffffff;
-  transition: color var(--transition);
-}
-
-.topline-right a:hover {
-  color: var(--gold-light);
-}
-
-/* ==========================================================================
    SITE HEADER & NAVIGATION
    ========================================================================== */
 .site-header {
@@ -2134,6 +2076,13 @@ body:has(#vehicle-detail) .floating-wa,
 }
 
 @media (max-width: 768px) {
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
   :root {
     --shell: calc(100% - 32px);
   }
@@ -2194,6 +2143,12 @@ body:has(#vehicle-detail) .floating-wa,
     font-size: 15px;
     border-bottom: 1px solid var(--border-light);
     width: 100%;
+  }
+
+  .site-header.header-hero:not(.scrolled) .main-nav.open a,
+  .site-header.header-hero:not(.scrolled) .main-nav.open a:hover,
+  .site-header.header-hero:not(.scrolled) .main-nav.open a.active {
+    color: var(--ink);
   }
 
   .main-nav a.active::after {
@@ -2337,11 +2292,8 @@ body:has(#vehicle-detail) .floating-wa,
     gap: 32px;
   }
 
-  .mobile-sticky-bar {
-    display: flex;
-  }
-
   .vehicle-page {
+    padding-top: 96px;
     padding-bottom: 80px;
   }
 
@@ -2370,10 +2322,6 @@ body:has(#vehicle-detail) .floating-wa,
 }
 
 @media (max-width: 768px) {
-  .topline {
-    display: none;
-  }
-
   .detail-image-wrap {
     touch-action: pan-y;
   }
@@ -2522,6 +2470,14 @@ body:has(#vehicle-detail) .floating-wa,
 }
 
 @media (max-width: 768px) {
+  .site-header.header-hero,
+  .site-header.header-hero:not(.scrolled) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
   .site-header.header-hero:not(.scrolled) {
     background: transparent;
     backdrop-filter: none;

@@ -29,17 +29,50 @@ async function loadVehicles() {
   inventoryUnavailable = false;
   vehicles = cars
     .filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0)
-    .map((car) => ({
-      ...car,
-      class: car.class || car.model,
-      type: car.type || car.body || "Sedan",
-      mileage: `${new Intl.NumberFormat("en-US").format(Number(car.mileage) || 0)} km`,
-      image: car.image || "/images/cars/g350d_front.jpg",
-      gallery: car.gallery?.length ? car.gallery : [car.image || "/images/cars/g350d_front.jpg"],
-      badge: car.status === "In Stock" ? (car.badge || car.badges?.[0] || "Available") : car.status,
-      chassis: car.chassis || car.class || "Mercedes-Benz",
-      features: Array.isArray(car.features) ? car.features : [],
-    }));
+    .map((car) => {
+      const gallery = orderVehicleGallery(car);
+      return {
+        ...car,
+        class: car.class || car.model,
+        type: car.type || car.body || "Sedan",
+        mileage: `${new Intl.NumberFormat("en-US").format(Number(car.mileage) || 0)} km`,
+        image: gallery[0] || car.image || "/images/cars/g350d_front.jpg",
+        gallery,
+        badge: car.status === "In Stock" ? (car.badge || car.badges?.[0] || "Available") : car.status,
+        chassis: car.chassis || car.class || "Mercedes-Benz",
+        features: Array.isArray(car.features) ? car.features : [],
+      };
+    });
+}
+
+function orderVehicleGallery(car) {
+  const categoryRank = new Map();
+  const categoryOrder = ["front", "side", "rear", "interior", "other"];
+  categoryOrder.forEach((category, rank) => {
+    for (const image of car.galleryByCategory?.[category] || []) {
+      if (!categoryRank.has(image)) categoryRank.set(image, rank);
+    }
+  });
+
+  const photos = [...new Set([
+    car.image,
+    ...(Array.isArray(car.gallery) ? car.gallery : []),
+    ...categoryOrder.flatMap((category) => car.galleryByCategory?.[category] || []),
+  ].filter(Boolean))];
+
+  const photoRank = (url) => {
+    const name = String(url).split(/[?#]/, 1)[0].split("/").pop().toLowerCase();
+    if (/(^|[-_])(front|frontview|headon|head-on)([-_.]|$)/.test(name)) return 0;
+    if (/(^|[-_])side([-_.]|$)/.test(name)) return 1;
+    if (/(^|[-_])(rear|back|backview)([-_.]|$)/.test(name)) return 2;
+    if (/(^|[-_])(interior|cockpit|dashboard|cabin)([-_.]|$)/.test(name)) return 3;
+    return categoryRank.get(url) ?? 4;
+  };
+
+  return photos
+    .map((url, index) => ({ url, index, rank: photoRank(url) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(({ url }) => url);
 }
 
 // Helper: Money Formatter

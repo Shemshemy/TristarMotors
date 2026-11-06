@@ -47,12 +47,13 @@
         "/images/cars/c180_front.jpg"
       ],
       "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
-        "/images/cars/c180_rear.jpg",
+      "rear": [
+        "/images/cars/c180_rear.jpg"
+      ],
+      "interior": [
         "/images/cars/c180_interior.jpg"
-      ]
+      ],
+      "other": []
     },
     "frames": []
   },
@@ -74,10 +75,10 @@
     "acceleration": "8.0s (0-100)",
     "color": "Diamond White Metallic",
     "interior": "Black Nappa Leather / Open-Pore Ash Wood",
-    "image": "/images/cars/e220d_rear.jpg",
+    "image": "/images/cars/e220d_side.jpg",
     "gallery": [
-      "/images/cars/e220d_rear.jpg",
       "/images/cars/e220d_side.jpg",
+      "/images/cars/e220d_rear.jpg",
       "/images/cars/e220d_cockpit.jpg"
     ],
     "badge": "Rare 4MATIC Wagon",
@@ -100,16 +101,17 @@
       "Rare 4MATIC Wagon"
     ],
     "galleryByCategory": {
-      "front": [
+      "front": [],
+      "side": [
+        "/images/cars/e220d_side.jpg"
+      ],
+      "rear": [
         "/images/cars/e220d_rear.jpg"
       ],
-      "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
-        "/images/cars/e220d_side.jpg",
+      "interior": [
         "/images/cars/e220d_cockpit.jpg"
-      ]
+      ],
+      "other": []
     },
     "frames": []
   },
@@ -158,15 +160,15 @@
     ],
     "galleryByCategory": {
       "front": [
-        "/images/cars/g350d_front.jpg"
+        "/images/cars/g350d_front.jpg",
+        "/images/cars/g350d_headon.jpg"
       ],
       "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
-        "/images/cars/g350d_headon.jpg",
+      "rear": [
         "/images/cars/g350d_rear.jpg"
-      ]
+      ],
+      "interior": [],
+      "other": []
     },
     "frames": []
   },
@@ -213,15 +215,15 @@
       "4-Door Luxury Coupe"
     ],
     "galleryByCategory": {
-      "front": [
+      "front": [],
+      "side": [
         "/images/cars/cls350_side.jpg"
       ],
-      "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
+      "rear": [
         "/images/cars/cls350_rear.jpg"
-      ]
+      ],
+      "interior": [],
+      "other": []
     },
     "frames": []
   },
@@ -272,11 +274,11 @@
         "/images/cars/ml350_front.jpg"
       ],
       "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
+      "rear": [
         "/images/cars/ml350_rear.jpg"
-      ]
+      ],
+      "interior": [],
+      "other": []
     },
     "frames": []
   },
@@ -327,11 +329,11 @@
         "/images/cars/s320l_front.jpg"
       ],
       "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
+      "rear": [
         "/images/cars/s320l_rear.jpg"
-      ]
+      ],
+      "interior": [],
+      "other": []
     },
     "frames": []
   },
@@ -382,11 +384,11 @@
         "/images/cars/c200_front.jpg"
       ],
       "side": [],
-      "rear": [],
-      "interior": [],
-      "other": [
+      "rear": [
         "/images/cars/c200_rear.jpg"
-      ]
+      ],
+      "interior": [],
+      "other": []
     },
     "frames": []
   },
