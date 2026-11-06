@@ -3,7 +3,7 @@ export { starterCars };
 
 export const dealer = {
   name: "Tristar Motors", phone: "+254 734 490475", whatsapp: "254734490475",
-  address: "Masaba Road, Upper Hill, Nairobi, Kenya", hours: "Viewing by appointment",
+  address: "La Colline Garden, Masaba Road, Upper Hill, Nairobi, Kenya", hours: "Viewing by appointment",
   tagline: "Mercedes! Mercedes! Mercedes or nothing.",
   priceTagline: "If there's no price tag, it's not for sale.",
   registrationEstimate: 399, salesTaxRate: 0.06,

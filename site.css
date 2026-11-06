@@ -286,6 +286,10 @@ h1 em, h2 em, h3 em {
   gap: 16px;
 }
 
+.topline-left a:hover {
+  color: #ffffff;
+}
+
 .topline-pill {
   display: inline-flex;
   align-items: center;
@@ -1929,6 +1933,12 @@ body:has(#vehicle-detail) .floating-wa,
   font-size: 13.5px;
   color: var(--green);
   font-weight: 600;
+}
+
+.detail-status a {
+  color: var(--ink-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .status-dot {
