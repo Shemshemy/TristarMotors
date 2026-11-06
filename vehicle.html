@@ -80,6 +80,10 @@
       <!-- Left Column: Gallery -->
       <div class="detail-gallery">
         <div class="detail-image-wrap">
+          <a class="mobile-detail-back" href="index.html#inventory" aria-label="Back to the collection">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
+            <span>Back</span>
+          </a>
           <img id="detail-image" alt="" fetchpriority="high">
           <span class="detail-photo-label" id="detail-badge">TRISTAR SELECT</span>
           <button class="save-car detail-save" id="detail-save" type="button" aria-label="Save this vehicle" aria-pressed="false">
@@ -152,14 +156,17 @@
 
       <!-- Right Column: Summary & Specs -->
       <div class="detail-summary">
-        <p class="eyebrow">
-          <span class="eyebrow-line"></span> <span id="detail-eyebrow-make">SELECTED</span> MOTORCAR
-        </p>
-        <h1 id="detail-title">Vehicle Model</h1>
-        <p class="detail-subtitle" id="detail-subtitle">Available to view in Upper Hill.</p>
+        <div class="detail-heading-group">
+          <p class="eyebrow">
+            <span class="eyebrow-line"></span> <span id="detail-eyebrow-make">SELECTED</span> MOTORCAR
+          </p>
+          <h1 id="detail-title">Vehicle Model</h1>
+          <p class="detail-subtitle" id="detail-subtitle">Available to view in Upper Hill.</p>
+        </div>
 
-        <!-- Pricing & Availability -->
-        <div class="detail-price-box">
+        <div class="detail-main-info">
+          <!-- Pricing & Availability -->
+          <div class="detail-price-box">
           <div class="detail-price-tag">Cash Purchase Price</div>
           <div class="detail-price" id="detail-price">KSh 0</div>
           <div class="detail-status">
@@ -181,6 +188,7 @@
           <a class="button button-outline" id="detail-email" href="mailto:sales@tristarmotors.co.ke">
             <span>Email Inquiry</span>
           </a>
+          </div>
         </div>
       </div>
     </section>

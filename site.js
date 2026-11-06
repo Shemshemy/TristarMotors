@@ -15,6 +15,13 @@ const DEALER = {
 let vehicles = [];
 let inventoryUnavailable = false;
 
+function syncMobileViewportWidth() {
+  document.documentElement.style.setProperty("--mobile-viewport-width", `${window.innerWidth}px`);
+}
+
+syncMobileViewportWidth();
+window.addEventListener("resize", syncMobileViewportWidth, { passive: true });
+
 async function loadVehicles() {
   let cars;
   try {
@@ -501,26 +508,54 @@ function setupVehiclePage() {
 
   // Gallery
   const mainImage = document.getElementById("detail-image");
+  const galleryImages = car.gallery?.length ? car.gallery : [car.image];
+  let activeGalleryIndex = 0;
   if (mainImage) {
-    mainImage.src = car.image;
+    mainImage.src = galleryImages[0];
     mainImage.alt = `${car.year} Mercedes-Benz ${car.model}`;
   }
 
   const thumbContainer = document.getElementById("detail-thumbs");
-  if (thumbContainer && car.gallery && car.gallery.length > 0) {
-    thumbContainer.innerHTML = car.gallery.map((imgUrl, i) => `
-      <button class="thumb-btn ${i === 0 ? "active" : ""}" type="button" data-src="${imgUrl}" aria-label="Angle ${i + 1}">
+  if (thumbContainer && galleryImages.length > 0) {
+    thumbContainer.innerHTML = galleryImages.map((imgUrl, i) => `
+      <button class="thumb-btn ${i === 0 ? "active" : ""}" type="button" data-index="${i}" aria-label="Angle ${i + 1}" aria-current="${i === 0 ? "true" : "false"}">
         <img src="${imgUrl}" alt="${car.model} photo ${i + 1}" loading="lazy">
       </button>
     `).join("");
 
+    const showGalleryImage = (index) => {
+      activeGalleryIndex = (index + galleryImages.length) % galleryImages.length;
+      if (mainImage) mainImage.src = galleryImages[activeGalleryIndex];
+      thumbContainer.querySelectorAll(".thumb-btn").forEach((button, buttonIndex) => {
+        const active = buttonIndex === activeGalleryIndex;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-current", String(active));
+      });
+    };
+
     thumbContainer.querySelectorAll(".thumb-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (mainImage) mainImage.src = btn.dataset.src;
-        thumbContainer.querySelectorAll(".thumb-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
+        showGalleryImage(Number(btn.dataset.index));
       });
     });
+
+    const imageWrap = mainImage?.closest(".detail-image-wrap");
+    if (imageWrap && galleryImages.length > 1) {
+      let swipeStart = null;
+      imageWrap.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse" || event.target.closest("a, button")) return;
+        swipeStart = { x: event.clientX, y: event.clientY };
+      }, { passive: true });
+      imageWrap.addEventListener("pointerup", (event) => {
+        if (!swipeStart) return;
+        const deltaX = event.clientX - swipeStart.x;
+        const deltaY = event.clientY - swipeStart.y;
+        swipeStart = null;
+        if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+        showGalleryImage(activeGalleryIndex + (deltaX < 0 ? 1 : -1));
+      }, { passive: true });
+      imageWrap.addEventListener("pointercancel", () => { swipeStart = null; }, { passive: true });
+    }
   }
 
   // Features Checklist
