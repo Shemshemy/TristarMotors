@@ -2258,12 +2258,19 @@ body:has(#vehicle-detail) .floating-wa,
 
   .sort-wrap {
     justify-content: space-between;
+    padding-right: 50px;
   }
 
   .sort-select {
     min-height: 40px;
-    flex: 1;
-    max-width: 220px;
+    flex: 0 1 220px;
+    width: 220px;
+    max-width: min(220px, calc(100% - 44px));
+    font-size: 16px;
+  }
+
+  .search-field select {
+    font-size: 16px;
   }
 
   .filter-tabs {
@@ -2330,7 +2337,7 @@ body:has(#vehicle-detail) .floating-wa,
 
   .floating-actions {
     bottom: 80px;
-    right: 18px;
+    right: 52px;
   }
 }
 
