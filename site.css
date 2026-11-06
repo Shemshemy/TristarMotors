@@ -2125,16 +2125,20 @@ body:has(#vehicle-detail) .floating-wa,
 
 @media (max-width: 768px) {
   :root {
-    --shell: calc(100vw - 32px);
+    --shell: calc(100% - 32px);
   }
 
   html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     scrollbar-width: none;
   }
 
   body {
-    width: 100vw;
-    overflow-x: clip;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     scrollbar-width: none;
   }
 
@@ -2337,7 +2341,7 @@ body:has(#vehicle-detail) .floating-wa,
 
   .floating-actions {
     bottom: 80px;
-    right: 52px;
+    right: max(16px, env(safe-area-inset-right, 0px));
   }
 }
 
@@ -2509,11 +2513,6 @@ body:has(#vehicle-detail) .floating-wa,
 
 @media (max-width: 768px) {
   .site-header.header-hero:not(.scrolled) {
-    width: 100vw;
-    max-width: none;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
     background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
