@@ -3,7 +3,7 @@ services:
     runtime: node
     name: tristar-motors
     plan: starter
-    buildCommand: npm ci --prefix dealer-platform && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm --prefix dealer-platform start
     healthCheckPath: /api/health
     envVars:
