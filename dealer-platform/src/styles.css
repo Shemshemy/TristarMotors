@@ -6813,3 +6813,74 @@ body,.app-home {
     gap: 9px;
   }
 }
+
+.admin-back-site {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 0 14px;
+  border: 1px solid #e8e7e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #4d514c;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: background .18s, border-color .18s, color .18s;
+}
+
+.admin-back-site:hover {
+  border-color: #d9d2c3;
+  background: #f8f7f3;
+  color: #20231f;
+}
+
+.admin-back-site svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-user-tools {
+  margin-left: 12px;
+}
+
+@media (max-width: 760px) {
+  .admin-site-header .logo {
+    width: 128px;
+    flex-basis: 128px;
+  }
+
+  .admin-site-header .logo img {
+    width: 128px;
+  }
+
+  .admin-back-site {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    justify-content: center;
+    gap: 0;
+    margin-left: auto;
+    padding: 0;
+  }
+
+  .admin-back-site span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-user-tools {
+    margin-left: 0;
+  }
+}
