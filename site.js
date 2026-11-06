@@ -100,6 +100,8 @@ let activeBudget = "all";
 let activeFuel = "all";
 let activeSort = "featured";
 let savedOnly = false;
+const INVENTORY_PAGE_SIZE = 6;
+let currentPage = 1;
 let toastTimer = null;
 
 // Toast Alert
@@ -133,6 +135,7 @@ function toggleSaved(id) {
   }
   localStorage.setItem("tristar-benzes-saved", JSON.stringify([...savedVehicles]));
   updateSavedCount();
+  currentPage = 1;
   renderVehicles();
 }
 
@@ -142,6 +145,8 @@ function renderVehicles() {
   if (!grid) return;
   if (inventoryUnavailable) {
     grid.innerHTML = `<p class="inventory-error">We couldn’t load the cars. Please refresh the page.</p>`;
+    const pagination = document.querySelector("#inventory-pagination");
+    if (pagination) pagination.hidden = true;
     return;
   }
 
@@ -175,6 +180,9 @@ function renderVehicles() {
   // Update Inventory Counts
   const countEl = document.querySelector("#result-count");
   if (countEl) countEl.textContent = String(results.length).padStart(2, "0");
+  const totalPages = Math.ceil(results.length / INVENTORY_PAGE_SIZE);
+  currentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
+  const pageResults = results.slice((currentPage - 1) * INVENTORY_PAGE_SIZE, currentPage * INVENTORY_PAGE_SIZE);
 
   // Saved Filter Indicator
   const savedIndicator = document.querySelector("#saved-indicator");
@@ -194,7 +202,7 @@ function renderVehicles() {
   if (emptyState) emptyState.hidden = results.length > 0;
 
   // Render Product Cards
-  grid.innerHTML = results.map((car) => {
+  grid.innerHTML = pageResults.map((car) => {
     const isSaved = savedVehicles.has(car.id);
     const waText = `Hello Tristar Motors, I am interested in purchasing the ${car.year} Mercedes-Benz ${car.model} (Cash Price: ${money(car.price)}). Is it available to view at your La Colline Garden showroom on Masaba Road?`;
     const waUrl = getWhatsAppUrl(waText);
@@ -255,7 +263,38 @@ function renderVehicles() {
     `;
   }).join("");
 
+  renderInventoryPagination(totalPages);
+
   updateDynamicCounts();
+}
+
+function renderInventoryPagination(totalPages) {
+  const pagination = document.querySelector("#inventory-pagination");
+  if (!pagination) return;
+  pagination.hidden = totalPages <= 1;
+  if (pagination.hidden) return;
+
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  startPage = Math.max(1, endPage - 4);
+  const pageButtons = [];
+  if (startPage > 1) {
+    pageButtons.push(`<button class="page-number" type="button" data-page="1" aria-label="Page 1">1</button>`);
+    if (startPage > 2) pageButtons.push(`<span class="page-ellipsis" aria-hidden="true">…</span>`);
+  }
+  for (let page = startPage; page <= endPage; page += 1) {
+    pageButtons.push(`<button class="page-number ${page === currentPage ? "active" : ""}" type="button" data-page="${page}" aria-label="Page ${page}" ${page === currentPage ? 'aria-current="page"' : ""}>${page}</button>`);
+  }
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pageButtons.push(`<span class="page-ellipsis" aria-hidden="true">…</span>`);
+    pageButtons.push(`<button class="page-number" type="button" data-page="${totalPages}" aria-label="Page ${totalPages}">${totalPages}</button>`);
+  }
+
+  pagination.innerHTML = `
+    <button class="page-step" type="button" data-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""} aria-label="Previous page">← <span>Previous</span></button>
+    <div class="page-numbers">${pageButtons.join("")}</div>
+    <button class="page-step" type="button" data-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""} aria-label="Next page"><span>Next</span> →</button>
+  `;
 }
 
 // Update Counts on Badges
@@ -297,6 +336,14 @@ function setupHome() {
     }
   });
 
+  document.querySelector("#inventory-pagination")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-page]");
+    if (!button || button.disabled) return;
+    currentPage = Number(button.dataset.page);
+    renderVehicles();
+    document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   // Search Form
   const searchForm = document.querySelector("#search-form");
   searchForm?.addEventListener("submit", (e) => {
@@ -304,6 +351,7 @@ function setupHome() {
     activeBudget = document.querySelector("#budget-filter")?.value || "all";
     activeFuel = document.querySelector("#fuel-filter")?.value || "all";
     savedOnly = false;
+    currentPage = 1;
 
     renderVehicles();
 
@@ -317,6 +365,7 @@ function setupHome() {
       const makeSelect = document.querySelector("#make-filter");
       if (makeSelect) makeSelect.value = activeMake;
       savedOnly = false;
+      currentPage = 1;
       syncMakeChips(activeMake);
       renderVehicles();
       document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
@@ -330,6 +379,7 @@ function setupHome() {
       const typeSelect = document.querySelector("#type-filter");
       if (typeSelect) typeSelect.value = activeType;
       savedOnly = false;
+      currentPage = 1;
       syncTypeTabs(activeType);
       renderVehicles();
       document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
@@ -343,6 +393,7 @@ function setupHome() {
       const typeSelect = document.querySelector("#type-filter");
       if (typeSelect) typeSelect.value = activeType;
       savedOnly = false;
+      currentPage = 1;
       syncTypeTabs(activeType);
       renderVehicles();
     });
@@ -351,6 +402,7 @@ function setupHome() {
   // Sort Dropdown
   document.querySelector("#sort-select")?.addEventListener("change", (e) => {
     activeSort = e.target.value;
+    currentPage = 1;
     renderVehicles();
   });
 
@@ -362,6 +414,7 @@ function setupHome() {
     activeFuel = "all";
     activeSort = "featured";
     savedOnly = false;
+    currentPage = 1;
 
     if (document.querySelector("#make-filter")) document.querySelector("#make-filter").value = "all";
     if (document.querySelector("#type-filter")) document.querySelector("#type-filter").value = "all";
@@ -383,6 +436,7 @@ function setupHome() {
         return;
       }
       savedOnly = !savedOnly;
+      currentPage = 1;
       renderVehicles();
       document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
       showToast(savedOnly ? `Showing ${savedVehicles.size} saved Mercedes-Benz vehicle${savedVehicles.size === 1 ? "" : "s"}` : "Showing all in-stock Mercedes-Benz vehicles");

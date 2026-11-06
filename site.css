@@ -933,6 +933,64 @@ h1 em, h2 em, h3 em {
   gap: 24px;
 }
 
+.inventory-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.inventory-pagination[hidden] {
+  display: none;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-number,
+.page-step {
+  min-width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+
+.page-number:hover,
+.page-step:not(:disabled):hover {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.page-number.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.page-step:disabled {
+  opacity: .42;
+  cursor: default;
+}
+
+.page-ellipsis {
+  padding: 0 2px;
+  color: var(--muted);
+}
+
 .car-card {
   position: relative;
   display: flex;
@@ -2211,6 +2269,23 @@ body:has(#vehicle-detail) .floating-wa,
   .car-grid {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .inventory-pagination {
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .page-number,
+  .page-step {
+    min-width: 36px;
+    height: 38px;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .page-step span {
+    display: none;
   }
 
   .inventory-toolbar {
