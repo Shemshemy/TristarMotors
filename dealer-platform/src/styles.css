@@ -6632,6 +6632,18 @@ body,.app-home {
   outline: 3px solid rgba(177, 140, 67, .16);
 }
 
+.password-dialog-copy {
+  margin: -4px 0 18px;
+  color: #69716b;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#password-change-form {
+  display: grid;
+  gap: 13px;
+}
+
 .admin-site-header .header-main {
   justify-content: space-between;
 }

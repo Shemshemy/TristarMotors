@@ -1,4 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -18,12 +19,71 @@ function readCookie(request, name) {
 }
 
 export class AdminAuth {
-  constructor(password) {
-    this.configured = typeof password === "string" && password.length >= 12;
-    this.salt = this.configured ? randomBytes(16) : null;
-    this.passwordHash = this.configured ? scryptSync(password, this.salt, 32) : null;
+  constructor(password, { passwordFilePath } = {}) {
+    this.passwordFilePath = passwordFilePath;
     this.sessions = new Map();
     this.loginAttempts = new Map();
+
+    let saved;
+    if (passwordFilePath) {
+      try {
+        saved = JSON.parse(readFileSync(passwordFilePath, "utf8"));
+      } catch (error) {
+        if (error.code !== "ENOENT") throw new Error(`Could not read administrator password settings: ${error.message}`);
+      }
+    }
+
+    const envPasswordAvailable = typeof password === "string" && password.length >= 12;
+    const savedStateIsValid = saved?.version === 1 &&
+      /^[a-f\d]{32}$/.test(saved.environmentSalt || "") &&
+      /^[a-f\d]{64}$/.test(saved.environmentPasswordHash || "") &&
+      /^[a-f\d]{32}$/.test(saved.salt || "") &&
+      /^[a-f\d]{64}$/.test(saved.passwordHash || "");
+    if (envPasswordAvailable && savedStateIsValid) {
+      this.environmentSalt = Buffer.from(saved.environmentSalt, "hex");
+      this.environmentPasswordHash = Buffer.from(saved.environmentPasswordHash, "hex");
+      const candidate = scryptSync(password, this.environmentSalt, 32);
+      if (timingSafeEqual(candidate, this.environmentPasswordHash)) {
+        this.configured = true;
+        this.salt = Buffer.from(saved.salt, "hex");
+        this.passwordHash = Buffer.from(saved.passwordHash, "hex");
+        return;
+      }
+    }
+
+    this.configured = envPasswordAvailable;
+    this.environmentSalt = this.configured ? randomBytes(16) : null;
+    this.environmentPasswordHash = this.configured ? scryptSync(password, this.environmentSalt, 32) : null;
+    this.salt = this.configured ? randomBytes(16) : null;
+    this.passwordHash = this.configured ? scryptSync(password, this.salt, 32) : null;
+    if (this.configured && passwordFilePath) this.persistPassword(this.salt, this.passwordHash);
+  }
+
+  persistPassword(salt, passwordHash) {
+    const temporaryPath = `${this.passwordFilePath}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
+    const contents = JSON.stringify({
+      version: 1,
+      environmentSalt: this.environmentSalt.toString("hex"),
+      environmentPasswordHash: this.environmentPasswordHash.toString("hex"),
+      salt: salt.toString("hex"),
+      passwordHash: passwordHash.toString("hex"),
+    });
+    writeFileSync(temporaryPath, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
+    renameSync(temporaryPath, this.passwordFilePath);
+  }
+
+  updatePassword(password) {
+    if (typeof password !== "string" || password.length < 12 || password.length > 1024) {
+      throw new Error("Password must be between 12 and 1024 characters");
+    }
+    const salt = randomBytes(16);
+    const passwordHash = scryptSync(password, salt, 32);
+    if (this.passwordFilePath) this.persistPassword(salt, passwordHash);
+    this.salt = salt;
+    this.passwordHash = passwordHash;
+    this.configured = true;
+    this.sessions.clear();
+    this.loginAttempts.clear();
   }
 
   checkPassword(password) {

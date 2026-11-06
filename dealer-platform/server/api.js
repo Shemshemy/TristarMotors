@@ -129,11 +129,12 @@ function staticFilePath(root, pathname) {
 
 export function createInventoryApi(inventory, {
   adminPassword = process.env.TRISTAR_ADMIN_PASSWORD,
+  passwordFilePath,
   uploadDirectory,
   staticDirectory,
   allowRemote = false,
 } = {}) {
-  const auth = new AdminAuth(adminPassword);
+  const auth = new AdminAuth(adminPassword, { passwordFilePath });
   return createServer(async (request, response) => {
     if (!allowRemote && !isLoopback(request.socket.remoteAddress)) {
       send(response, 403, { error: "This local prototype is only available from this computer" });
@@ -214,6 +215,25 @@ export function createInventoryApi(inventory, {
       }
       if (!auth.isAuthenticated(request)) {
         send(response, 401, { error: "Administrator sign-in is required" });
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/api/auth/change-password") {
+        const body = await readJson(request);
+        if (!auth.checkPassword(body.currentPassword)) {
+          send(response, 401, { error: "Current password is incorrect" });
+          return;
+        }
+        if (typeof body.newPassword !== "string" || body.newPassword.length < 12 || body.newPassword.length > 1024) {
+          send(response, 400, { error: "New password must be between 12 and 1024 characters" });
+          return;
+        }
+        if (auth.checkPassword(body.newPassword)) {
+          send(response, 400, { error: "Choose a new password that is different from the current one" });
+          return;
+        }
+        auth.updatePassword(body.newPassword);
+        auth.destroySession(request, response);
+        send(response, 200, { changed: true });
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/reset") {

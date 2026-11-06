@@ -44,6 +44,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 const server = createInventoryApi(database, {
   adminPassword: process.env.TRISTAR_ADMIN_PASSWORD,
+  passwordFilePath: join(dataDirectory, "admin-password.json"),
   uploadDirectory,
   staticDirectory: production
     ? fileURLToPath(new URL("../../public-site-dist", import.meta.url))
