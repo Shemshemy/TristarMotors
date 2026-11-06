@@ -7,8 +7,8 @@ A responsive, mobile-first dealership storefront and dealer workspace built with
 Requirements: Node.js 22.5+ and npm. The local API uses Node's built-in `node:sqlite`.
 
 ```bash
-cd dealer-platform
-npm install
+cd ..
+npm --prefix dealer-platform install
 read -s -p "Set Allan's local admin password (12+ characters): " TRISTAR_ADMIN_PASSWORD
 export TRISTAR_ADMIN_PASSWORD
 printf '\n'
@@ -17,9 +17,9 @@ npm run dev
 
 For a password that should load automatically on later starts, put `TRISTAR_ADMIN_PASSWORD=...` in the ignored `.env.local` file in `dealer-platform`; the local API loads it at startup. Keep that file private and never commit or share it.
 
-Open the Vite URL printed in the terminal (normally `http://127.0.0.1:5173`). This starts the Vite storefront and a local inventory API on `http://127.0.0.1:4174`; Vite proxies `/api` requests to it. Create a production bundle with `npm run build`; preview it with `npm run preview` while the local API is running.
+Open `http://127.0.0.1:4174` for the public website. Open `http://127.0.0.1:4174/#/admin` to sign in and manage cars. This builds the site and starts the website and local inventory API together. The dealer platform's old storefront is no longer used.
 
-Inventory and availability are stored in `data/inventory.sqlite`, and uploaded photos are stored in the ignored `data/uploads/` directory; both survive page reloads and server restarts. On startup, existing local upload files under `public/images/cars/uploads/` are copied into `data/uploads/` without overwriting existing files. On first run, the database is initialized with the demonstration vehicles. The dealer portal at `#/admin` shows explicit Available, Pending, or Sold indicators and lets you change availability. Public listings and vehicle detail pages show each vehicle's current availability, including pending and sold vehicles. Customer leads and saved vehicles remain in this browser's local storage.
+Inventory and availability are stored in `data/inventory.sqlite`, and uploaded photos are stored in the ignored `data/uploads/` directory; both survive page reloads and server restarts. On startup, existing local upload files under `public/images/cars/uploads/` are copied into `data/uploads/` without overwriting existing files. The database starts with the eight cars currently shown on the main website. The admin page at `/#/admin` edits those same listings, including their photos, descriptions, specifications, prices, and availability. The first startup after this update removes the old sample cars and adds the current website cars. Other custom listings and uploaded photos are kept.
 
 ### Administrator sign-in
 
@@ -50,15 +50,11 @@ Use a converted image in a listing with the public URL, for example `/images/car
 
 ## Render deployment
 
-The workspace-level `render.yaml` defines one Node web service for `dealer-platform`: Render runs `npm ci && npm run build`, starts the built app with `npm start`, and checks `/api/health`. The production server serves the Vite build and `/api` from the same origin. It binds to `0.0.0.0` on Render's `PORT`; local development remains bound to loopback.
+The workspace-level `render.yaml` serves the public website from the repository root, so `/` opens the root `index.html` and `/#/admin` opens the admin sign-in. The inventory API and admin page run on the same service, with SQLite and uploaded photos on the persistent disk.
 
-The Blueprint provisions a **Starter** web service and a **1 GB persistent disk** mounted at `/var/data`. Render generates a secret for `TRISTAR_ADMIN_PASSWORD`; retrieve it from the service's Environment settings and use it for the Allan administrator sign-in. Do not put credentials in the Blueprint or commit them. The service fails startup if the production password is missing or too short. For a service created outside this Blueprint, add `TRISTAR_ADMIN_PASSWORD` manually in its Render Environment settings with a private value of at least 12 characters, then redeploy. `TRISTAR_DATA_DIR=/var/data` puts both `inventory.sqlite` and uploaded vehicle photos under the mounted disk. The first deployment on a new disk initializes the sample inventory; it does not automatically transfer your local SQLite records or ignored `data/uploads/` files. If you need to retain local changes, migrate the database and photos onto the mounted disk before using the live admin to make updates. Files bundled under the public uploads folder are copied into persistent storage on first startup without overwriting existing files.
+Render generates the `TRISTAR_ADMIN_PASSWORD` secret for the admin sign-in. The service requires a persistent disk for inventory and uploaded photos.
 
-A free web service cannot attach a persistent disk. Its filesystem is ephemeral, so the SQLite inventory and uploaded photos would be lost on redeploy, restart, or spin-down; it is not suitable for this data-backed app. A paid web-service plan and disk are required. The disk is billed separately by size; the Blueprint starts with 1 GB, and the compute plan is also billable. Check Render's [current pricing](https://render.com/pricing) and your selected region before creating the service rather than relying on a stale estimate. Render's [disk documentation](https://render.com/docs/disks) notes that a disk is single-instance, prevents scaling the service to multiple instances, and causes brief downtime during deploys. Keep independent database and photo backups; disk snapshots are not a substitute for application-level backups.
-
-To deploy, push this workspace to a connected Git provider, select the repository in Render, and use the Blueprint from the repository root. Review the selected region, Starter compute plan, disk mount/size, and current costs, then create the service. No Render account, service, or deployment has been created from this workspace.
-
-The production server accepts public requests behind Render's TLS-terminating load balancer. Admin writes still require Allan's password and authenticated session; the session cookie is Secure, HttpOnly, and SameSite=Strict. Sessions are held in memory and will need a fresh sign-in after a service restart. This remains a small single-instance prototype: review authentication, operational monitoring, backup/restore, and data management before relying on it for business-critical inventory.
+Deploy the root website by pushing this workspace to your Git provider and creating a Render Blueprint from the repository root. The dealer-platform server can still be run locally with the commands above.
 
 ### 360° photo sequences
 
@@ -66,9 +62,7 @@ For each listing, upload an ordered set of 24–36 same-size WebP frames. In the
 
 ## Included views and components
 
-- Storefront: vehicle search for make, model, year, body style, maximum price, and mileage; rounded body-type choices with WebP thumbnails; inventory filters for availability, fuel, body type, transmission, and make; vehicle cards with availability badges; saved cars; address/map shortcut; WhatsApp CTA; appointment-viewing information.
-- Vehicle detail: gallery, configurable 360° viewer with a cover-cropped primary image, KSh price, vehicle description and highlights, and a direct WhatsApp test-drive link.
-- Dealer portal at `#/admin`: add/edit/remove listings, change stock status, and review or remove incoming leads.
+- Admin page at `/#/admin`: add, edit, or remove dealer inventory; change vehicle availability; and review or remove customer messages.
 - Source modules: `src/main.js` (views and interactions), `src/data.js` (seed data and dealer details), `src/store.js` (local leads and saved vehicles), `src/viewer.js` (360° component), `src/styles.css` (Tailwind plus application styles), and `server/` (local SQLite inventory API).
 - Body-type category WebP images are in `public/images/body-types/`; the original source images are kept in the workspace-level `Mercedes Body Types/` folder.
 

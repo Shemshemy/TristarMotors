@@ -30,6 +30,8 @@ const STATIC_CONTENT_TYPES = new Map([
 const allowedFields = new Set([
   "id", "year", "make", "model", "trim", "body", "price", "mileage", "transmission",
   "engine", "fuel", "vin", "status", "badges", "image", "gallery", "galleryByCategory", "frames", "frameBase",
+  "class", "type", "chassis", "drivetrain", "power", "acceleration", "color", "interior",
+  "condition", "description", "features", "badge",
 ]);
 
 function send(response, status, value) {
@@ -66,7 +68,7 @@ function validateCar(value, id) {
     return "Price must be a positive number or null";
   }
   if (!Number.isFinite(Number(car.mileage)) || Number(car.mileage) < 0) return "Mileage must be zero or greater";
-  for (const field of ["badges", "gallery", "frames"]) {
+  for (const field of ["badges", "gallery", "frames", "features"]) {
     if (car[field] !== undefined && !Array.isArray(car[field])) return `${field} must be an array`;
   }
   if (car.galleryByCategory !== undefined) {

@@ -3,47 +3,238 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f6f4">
-  <meta name="description" content="Explore the details of a carefully selected vehicle from Tristar Motors.">
-  <title>Vehicle details | Tristar Motors</title>
+  <meta name="theme-color" content="#0f1114">
+  <meta name="description" content="Explore vehicle specifications, provenance, and pricing at Tristar Motors Nairobi.">
+  <title>Vehicle Details | Tristar Motors Nairobi</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <div class="topline"><span>Considered cars. Exceptional journeys.</span><a href="index.html#contact">Speak to our team <span aria-hidden="true">↗</span></a></div>
+  <!-- Scroll Progress -->
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+
+  <!-- Topline -->
+  <div class="topline">
+    <div class="topline-left">
+      <span class="topline-pill">Showroom</span>
+      <span>Upper Hill, Nairobi, Kenya · Mon – Sat 8:30am – 6:00pm</span>
+    </div>
+    <div class="topline-right">
+      <a href="tel:+254734490475">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>+254 734 490 475</span>
+      </a>
+      <a href="https://wa.me/254734490475" target="_blank" rel="noopener">
+        <span>WhatsApp us</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Site Header -->
   <header class="site-header" id="top">
-    <a class="brand" href="index.html" aria-label="Tristar Motors home"><img src="Logos/TristarMotors.png" alt="Tristar Motors"></a>
-    <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
-    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a class="active" href="index.html#inventory">Find a car</a><a href="index.html#experience">Our experience</a><a href="index.html#sell">Sell your car</a><a href="index.html#contact">Contact</a></nav>
-    <div class="header-actions"><a class="icon-button saved-link" href="index.html?saved=1#inventory" aria-label="Show saved cars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg><span class="saved-count">0</span></a><a class="button button-dark button-small" href="index.html#contact">Get in touch <span aria-hidden="true">↗</span></a></div>
+    <a class="brand" href="index.html" aria-label="Tristar Motors Home">
+      <img src="Logos/TristarMotors.png" alt="Tristar Motors" width="170" height="61">
+    </a>
+
+    <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+      <a href="index.html#inventory">The Collection</a>
+      <a href="index.html#body-styles">Body Styles</a>
+      <a href="index.html#experience">The Experience</a>
+      <a href="index.html#sell">Sell Your Car</a>
+      <a href="index.html#contact">Showroom</a>
+    </nav>
+
+    <div class="header-actions">
+      <a class="icon-button saved-link" href="index.html?saved=1#inventory" aria-label="Show saved vehicles">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg>
+        <span class="saved-count">0</span>
+      </a>
+      <a class="button button-dark button-small button-header-cta" href="index.html#contact">
+        <span>Visit Showroom</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
   </header>
-  <main id="vehicle-detail" class="vehicle-page">
-    <div class="detail-breadcrumb"><a href="index.html">Home</a><span>/</span><a href="index.html#inventory">The collection</a><span>/</span><span id="detail-make">Vehicle</span></div>
+
+  <!-- Vehicle Main Detail Section -->
+  <main id="vehicle-detail" class="vehicle-page section-shell">
+    <!-- Breadcrumbs -->
+    <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      <a href="index.html#inventory">Collection</a>
+      <span>/</span>
+      <span id="detail-make-crumb">Mercedes-Benz</span>
+      <span>/</span>
+      <span id="detail-model-crumb">Model</span>
+    </nav>
+
     <section class="detail-layout">
+      <!-- Left Column: Gallery -->
       <div class="detail-gallery">
-        <div class="detail-image-wrap"><img id="detail-image" alt="" fetchpriority="high"><span class="detail-photo-label">TRISTAR SELECT</span><button class="save-car detail-save" id="detail-save" type="button" aria-label="Save this car" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg></button></div>
-        <div class="detail-gallery-caption"><span>Exterior view</span><span>Representative photography</span></div>
+        <div class="detail-image-wrap">
+          <img id="detail-image" alt="" fetchpriority="high">
+          <span class="detail-photo-label" id="detail-badge">TRISTAR SELECT</span>
+          <button class="save-car detail-save" id="detail-save" type="button" aria-label="Save this vehicle" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg>
+          </button>
+        </div>
+        <!-- Thumbnails -->
+        <div class="detail-thumbnails" id="detail-thumbs" aria-label="Photo gallery thumbnails"></div>
+        <div class="spec-block">
+          <div class="spec-heading">
+            <h3>Technical Specifications</h3>
+            <span class="verified-spec">VERIFIED SPEC</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <span>Odometer</span>
+              <strong id="detail-mileage">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Body Style</span>
+              <strong id="detail-type">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Transmission</span>
+              <strong id="detail-transmission">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Fuel Type</span>
+              <strong id="detail-fuel">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Engine</span>
+              <strong id="detail-engine">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Drivetrain</span>
+              <strong id="detail-drivetrain">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Power</span>
+              <strong id="detail-power">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>0-100 km/h</span>
+              <strong id="detail-acceleration">—</strong>
+            </div>
+            <div class="spec-item spec-item-wide">
+              <span>Exterior Colour</span>
+              <strong id="detail-color">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Chassis</span>
+              <strong id="detail-chassis">—</strong>
+            </div>
+            <div class="spec-item">
+              <span>Interior</span>
+              <strong id="detail-interior">—</strong>
+            </div>
+            <div class="spec-item spec-item-wide">
+              <span>Condition</span>
+              <strong id="detail-condition">—</strong>
+            </div>
+          </div>
+        </div>
+        <section class="detail-features-block">
+          <h3>Selected Equipment</h3>
+          <ul class="detail-features" id="detail-features"></ul>
+        </section>
       </div>
+
+      <!-- Right Column: Summary & Specs -->
       <div class="detail-summary">
-        <p class="eyebrow"><span class="eyebrow-line"></span> SELECTED FOR YOU</p>
-        <h1 id="detail-title">Vehicle model</h1>
-        <p class="detail-subtitle">An exceptional example, ready for its next chapter.</p>
-        <div class="detail-price" id="detail-price"></div>
-        <div class="detail-status"><span class="note-dot"></span> Available now <span class="status-separator">·</span> Nairobi, Kenya</div>
+        <p class="eyebrow">
+          <span class="eyebrow-line"></span> <span id="detail-eyebrow-make">SELECTED</span> MOTORCAR
+        </p>
+        <h1 id="detail-title">Vehicle Model</h1>
+        <p class="detail-subtitle" id="detail-subtitle">Available to view in Upper Hill.</p>
+
+        <!-- Pricing & Availability -->
+        <div class="detail-price-box">
+          <div class="detail-price-tag">Cash Purchase Price</div>
+          <div class="detail-price" id="detail-price">KSh 0</div>
+          <div class="detail-status">
+            <span class="status-dot"></span> <span id="detail-status">Available for viewing · Upper Hill Showroom, Nairobi</span>
+          </div>
+        </div>
+
         <p class="detail-description" id="detail-description"></p>
-        <div class="detail-cta"><a class="button button-blue" id="detail-inquiry" href="mailto:hello@tristarmotors.co.ke">Enquire about this car <span aria-hidden="true">↗</span></a><a class="button button-outline" href="tel:+254700000000">Call our team</a></div>
-        <div class="spec-block"><div class="spec-heading"><span>At a glance</span><span>01 — 06</span></div><div class="spec-grid">
-          <div class="spec-item"><span>Odometer</span><strong id="detail-mileage"></strong></div><div class="spec-item"><span>Body style</span><strong id="detail-type"></strong></div>
-          <div class="spec-item"><span>Transmission</span><strong id="detail-transmission"></strong></div><div class="spec-item"><span>Fuel</span><strong id="detail-fuel"></strong></div>
-          <div class="spec-item"><span>Engine</span><strong id="detail-engine"></strong></div><div class="spec-item"><span>Exterior colour</span><strong id="detail-color"></strong></div>
-        </div></div>
-        <div class="detail-assurance"><span class="assurance-icon">✓</span><span><strong>A more considered purchase.</strong><small>Talk with our team about history, inspection and next steps.</small></span><a href="index.html#experience" aria-label="Learn about the Tristar experience">↗</a></div>
+
+        <!-- CTAs -->
+        <div class="detail-cta">
+          <a class="button button-whatsapp" id="detail-wa" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
+            <span>Message us</span>
+          </a>
+          <a class="button button-dark" id="detail-call" href="tel:+254734490475">
+            <span>Call us</span>
+          </a>
+          <a class="button button-outline" id="detail-email" href="mailto:sales@tristarmotors.co.ke">
+            <span>Email Inquiry</span>
+          </a>
+        </div>
       </div>
     </section>
-    <section class="detail-contact"><div><p class="eyebrow">YOUR NEXT DRIVE STARTS HERE</p><h2>Let's make it <em>yours.</em></h2></div><a class="button button-dark" id="detail-inquiry-bottom" href="#">Speak with Tristar <span aria-hidden="true">↗</span></a></section>
+
+    <!-- Bottom Contact CTA Banner -->
+    <section class="contact-band" style="margin-top: 64px;">
+      <div class="contact-band-left">
+        <p class="eyebrow">YOUR NEXT JOURNEY STARTS HERE</p>
+        <h2>Experience this car in <em>person.</em></h2>
+        <p>Come see the car or book a test drive.</p>
+      </div>
+      <div class="contact-band-actions">
+        <a class="button button-whatsapp" href="https://wa.me/254734490475?text=Hello%20Tristar%20Motors,%20I%20would%20like%20to%20schedule%20a%20private%20viewing" target="_blank" rel="noopener">
+          <span>Schedule Private Viewing</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
   </main>
-  <footer class="site-footer"><div class="footer-bottom"><span>© 2026 Tristar Motors. All rights reserved.</span><span>Thoughtfully driven.</span><a href="index.html">Back to collection ↑</a></div></footer>
+
+  <!-- Mobile Sticky Bottom Bar -->
+  <aside class="mobile-sticky-bar" aria-label="Quick contact action bar">
+    <div>
+      <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Direct Price</div>
+      <div class="mobile-sticky-price" id="sticky-price">KSh 0</div>
+    </div>
+    <a class="button button-whatsapp" id="sticky-wa" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
+      <span>Message us</span>
+    </a>
+  </aside>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 Tristar Motors Limited. All rights reserved.</span>
+      <span>Based in Nairobi.</span>
+      <a href="index.html">Back to Collection ↑</a>
+    </div>
+  </footer>
+
+  <!-- Floating Actions & Toast -->
+  <div class="floating-actions">
+    <a class="floating-wa" href="https://wa.me/254734490475" target="_blank" rel="noopener" aria-label="Quick WhatsApp Chat">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
+    </a>
+    <button class="scroll-top" id="scroll-top" type="button" aria-label="Back to top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts -->
   <script src="site.js"></script>
-  <script>document.querySelector('#detail-inquiry-bottom').href=document.querySelector('#detail-inquiry').href;</script>
 </body>
 </html>

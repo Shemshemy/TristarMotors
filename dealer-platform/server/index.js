@@ -1,5 +1,5 @@
 import { constants, copyFileSync, mkdirSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InventoryDatabase } from "./inventory.js";
 import { createInventoryApi } from "./api.js";
@@ -45,7 +45,11 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const server = createInventoryApi(database, {
   adminPassword: process.env.TRISTAR_ADMIN_PASSWORD,
   uploadDirectory,
-  staticDirectory: production ? fileURLToPath(new URL("../dist", import.meta.url)) : undefined,
+  staticDirectory: production
+    ? fileURLToPath(new URL("../../public-site-dist", import.meta.url))
+    : process.env.TRISTAR_PUBLIC_DIRECTORY
+      ? resolve(process.env.TRISTAR_PUBLIC_DIRECTORY)
+      : undefined,
   allowRemote: production,
 });
 

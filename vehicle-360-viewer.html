@@ -142,13 +142,13 @@
 <body>
   <main class="vdp">
     <p class="eyebrow">Vehicle details</p>
-    <h1>2025 BMW 5 Series</h1>
+    <h1>2020 Mercedes-Benz G350d</h1>
     <p class="subtitle">Take a closer look from every angle.</p>
 
     <section class="viewer-card" aria-label="Interactive 360 degree vehicle view">
       <div class="viewer-stage" id="vehicle-viewer" tabindex="0" role="region"
            aria-label="Vehicle 360 viewer. Drag left or right, or use the arrow keys to rotate.">
-        <img class="vehicle-frame" id="vehicle-frame" alt="2025 BMW 5 Series, exterior view" draggable="false">
+        <img class="vehicle-frame" id="vehicle-frame" alt="2020 Mercedes-Benz G350d, exterior view" draggable="false">
         <div class="viewer-hint" aria-hidden="true"><span class="hint-icon">↔</span> Drag to explore</div>
         <div class="viewer-loading" id="viewer-loading" aria-live="polite">
           <span id="loading-label">Loading vehicle views…</span>
@@ -173,7 +173,7 @@
   <script>
     // Replace these paths with your 24 sequential, same-size exterior frames.
     const vehicleFrames = Array.from({ length: 24 }, (_, index) =>
-      `/assets/bmw-5-series-360/frame-${String(index + 1).padStart(2, "0")}.webp`
+      `/assets/mercedes-g350d-360/frame-${String(index + 1).padStart(2, "0")}.webp`
     );
 
     const stage = document.querySelector("#vehicle-viewer");
@@ -221,7 +221,15 @@
       frame.onerror = () => {
         loadedCount += 1;
         progress.style.width = `${(loadedCount / vehicleFrames.length) * 100}%`;
-        loadingLabel.textContent = `Could not load frame ${index + 1}. Check the image URL.`;
+        if (index === 0) {
+          image.src = "images/cars/g350d_front.jpg";
+          loadingLabel.textContent = "360° photos are not available yet. Showing the vehicle photo.";
+          progress.hidden = true;
+          loading.hidden = false;
+        }
+        if (loadedCount === vehicleFrames.length && !loadedFrames.some((frame) => frame?.naturalWidth)) {
+          loadingLabel.textContent = "Vehicle photos could not be loaded.";
+        }
       };
       frame.decoding = "async";
       frame.src = url;

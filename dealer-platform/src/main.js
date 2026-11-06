@@ -11,6 +11,7 @@ let store = readStore();
 let currentFilters = { make:"all", model:"all", year:"all", body:"all", maxPrice:"all", maxMileage:"all", availability:"all", fuel:"all", transmission:"all", search:"", saved:false };
 let adminTab = "inventory";
 let editId = null;
+let vehicleModalOpen = false;
 let toastTimer;
 let disposeViewer = null;
 let searchExpanded = false;
@@ -33,7 +34,9 @@ let webpEncoderPromise;
 const escapeHTML = (value="") => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const route = () => location.hash || "#/";
 const carById = (id) => store.cars.find((car) => car.id === id);
-const listedCars = () => store.cars.filter((car) => Number.isFinite(Number(car.price)) && Number(car.price) > 0);
+const listedCars = () => store.cars.filter((car) =>
+  car.make === "Mercedes-Benz" && Number.isFinite(Number(car.price)) && Number(car.price) > 0
+);
 const priceLabel = (price) => price == null ? "Price on request" : money(price);
 const statusLabel = (status) => status === "In Stock" ? "Available" : status;
 const statusClass = (status) => status === "In Stock" ? "available" : status.toLowerCase();
@@ -63,8 +66,8 @@ const visibleCars = () => listedCars().filter((car) => {
   const f = currentFilters;
   const inMobileCategory = mobileCategory === "All" ||
     (mobileCategory === "SUV" && car.body === "SUV") ||
-    (mobileCategory === "Sports" && (car.body === "Coupe" || ["Porsche","Audi","Tesla"].includes(car.make))) ||
-    (mobileCategory === "Luxury" && ["Mercedes-Benz","BMW","Porsche","Audi","Tesla","Volvo"].includes(car.make));
+    (mobileCategory === "Sports" && ["Coupe", "Roadster"].includes(car.body)) ||
+    (mobileCategory === "Luxury" && car.make === "Mercedes-Benz");
   const availabilityMatches = f.availability === "all" ||
     (f.availability === "Available" && car.status === "In Stock") ||
     (f.availability === "Not available" && car.status !== "In Stock") ||
@@ -97,13 +100,10 @@ function vehicleDescription(car) {
   return `This ${name} has ${number(car.mileage)} miles, a ${car.engine} ${car.fuel.toLowerCase()} engine, and a ${car.transmission.toLowerCase()} transmission.`;
 }
 function header() {
-  const currentRoute = route();
-  const isVehiclePage = currentRoute.startsWith("#/cars/");
-  const isAdminPage = currentRoute.startsWith("#/admin");
-  return `<header class="site-header"><div class="shell header-main"><a class="logo" href="#/" aria-label="Tristar Motors home"><img src="/images/brand/tristarmotors.png" alt="Tristar Motors"></a>
-    <nav class="nav-links" id="main-nav" aria-label="Main navigation"><a href="#/" data-scroll="inventory" class="${isAdminPage?"":"active"}" ${isAdminPage?"":"aria-current=\"page\""}>Inventory</a><a href="#/" data-scroll="location">Visit us</a></nav>
-    <div class="header-contact"><a class="phone-link" href="tel:+${dealer.whatsapp}">${dealer.phone}<small>Call our sales team</small></a><a class="map-shortcut" href="https://maps.google.com/?q=${encodeURIComponent(dealer.address)}" target="_blank" rel="noopener">⌖ <span>Directions<small>Upper Hill</small></span></a>${isVehiclePage?"":`<button class="app-icon desktop-favorite" data-saved-view="true" aria-label="Show saved cars">♡<span>${store.favorites.length}</span></button>`}<a class="whatsapp" href="${waLink()}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg><span>WhatsApp us</span></a></div></div>
-    <div class="mobile-welcome"><a class="mobile-brand" href="#/" aria-label="Tristar Motors home"><img src="/images/brand/tristarmotors.png" alt="Tristar Motors"></a><a class="mobile-header-browse" href="#/" data-scroll="inventory">Browse cars <span aria-hidden="true">→</span></a><a class="mobile-header-contact" href="${waLink()}" target="_blank" rel="noopener" aria-label="Message Tristar Motors on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg><span>WhatsApp</span></a></div></header>`;
+  return `<header class="site-header admin-site-header"><div class="shell header-main">
+    <a class="logo" href="/" aria-label="Tristar Motors home"><img src="/images/brand/tristarmotors.png" alt="Tristar Motors"></a>
+    ${adminSession?.authenticated?`<div class="admin-user-tools"><div class="admin-user"><span class="admin-avatar" aria-hidden="true">A</span><span class="admin-user-copy"><strong>Allan</strong></span></div><button class="admin-logout-button" type="button" data-action="admin-logout" aria-label="Log out Allan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/></svg><span>Log out</span></button></div>`:""}
+  </div></header>`;
 }
 function footer() {
   return `<footer class="site-footer"><div class="shell"><div class="footer-top"><div class="footer-brand"><img src="/images/brand/tristarmotors.png" alt="Tristar Motors"><p>${escapeHTML(dealer.tagline)}</p></div><div class="footer-col"><strong>Explore</strong><a href="#/">Shop inventory</a></div><div class="footer-col"><strong>Contact</strong><a href="tel:+${dealer.whatsapp}">${dealer.phone}</a><a target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(dealer.address)}">${dealer.address}</a></div><div class="footer-col"><strong>Visit Tristar</strong><span>${dealer.hours}</span><a target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(dealer.address)}">Directions ↗</a><a href="${waLink()}" target="_blank" rel="noopener">WhatsApp us</a></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} Tristar Motors</span><span>${escapeHTML(dealer.priceTagline)}</span></div></div></footer>`;
@@ -132,7 +132,7 @@ function renderGalleryUploadWorkspace() {
     const saved = draftGallery[key] || [];
     const pending = pendingPhotoFiles[key] || [];
     return `<section class="photo-category"><div class="photo-category-heading"><h3>${label}</h3><span>${saved.length} uploaded · ${pending.length} selected</span></div><label class="photo-file-picker"><span>Select ${label.toLowerCase()}</span><input type="file" accept="image/*" multiple data-photo-category="${key}" aria-label="Select ${label} vehicle pictures" ${uploadInProgress ? "disabled" : ""}></label><div class="photo-preview-grid">${saved.map((url, index) => `<figure class="photo-preview saved"><img src="${escapeHTML(url)}" alt="${label} vehicle view ${index + 1}" loading="lazy"><figcaption>Uploaded</figcaption>${key === "front" ? `<button type="button" class="photo-use-main" data-use-main="${escapeHTML(url)}">Use as main picture</button>` : ""}</figure>`).join("")}${pending.map((photo, index) => `<figure class="photo-preview"><img src="${photo.preview}" alt="Preview of ${escapeHTML(photo.file.name)}"><figcaption>${escapeHTML(photo.file.name)} · preview</figcaption><button type="button" class="photo-remove-pending" data-remove-photo="${key}" data-photo-index="${index}" aria-label="Remove ${escapeHTML(photo.file.name)} from selection">Remove</button></figure>`).join("")}</div></section>`;
-  }).join("")}<div class="photo-upload-actions"><button class="btn btn-light" type="button" data-action="upload-photos" ${uploadInProgress || !photoCategories.some(([key]) => pendingPhotoFiles[key].length) ? "disabled" : ""}>${uploadInProgress ? "Converting and uploading…" : "Convert previews to WebP & upload"}</button><p class="photo-upload-status" id="photo-upload-status" role="status">Review previews before uploading. New photos are added without removing existing gallery images.</p></div>`;
+  }).join("")}<div class="photo-upload-actions"><button class="btn btn-light" type="button" data-action="upload-photos" ${uploadInProgress || !photoCategories.some(([key]) => pendingPhotoFiles[key].length) ? "disabled" : ""}>${uploadInProgress ? "Converting and uploading…" : "Upload selected photos"}</button><p class="photo-upload-status" id="photo-upload-status" role="status">Review previews before uploading. New photos are added without removing existing gallery images.</p></div>`;
   const statusNode = root.querySelector("#photo-upload-status");
   if (statusNode) statusNode.textContent = photoUploadMessage;
   root.querySelectorAll("[data-photo-category]").forEach((input) => input.addEventListener("change", () => {
@@ -233,6 +233,7 @@ function card(car) {
 }
 function renderHome() {
   disposeViewer?.(); disposeViewer=null;
+  document.title = "Tristar Motors | Mercedes-Benz Vehicles in Nairobi";
   const makes=[...new Set(listedCars().map(c=>c.make))].sort();
   const fuels=[...new Set([...store.cars.map(c=>c.fuel).filter(Boolean),"Diesel"])].sort();
   const transmissions=[...new Set(store.cars.map(c=>c.transmission).filter(Boolean))].sort();
@@ -259,13 +260,13 @@ function renderHome() {
     Luxury:"<path d='m12 3 2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z'/>",
   }[category]||"");
   app.innerHTML=`${header()}<main class="app-home">
-    <section class="shell app-search-section"><form id="home-search" class="app-search-form"><div class="app-search"><span class="search-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg></span><input name="search" type="search" value="${escapeHTML(currentFilters.search)}" placeholder="Search cars, makes, models…" aria-label="Search cars"><button class="search-filter-button" type="button" data-action="toggle-search-filters" aria-label="Show search filters"><svg viewBox="0 0 24 24"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"></path><circle cx="13" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg></button></div>
+    <section class="shell app-search-section"><div class="storefront-intro"><div><p class="eyebrow">TRISTAR MOTORS <span aria-hidden="true">·</span> UPPER HILL</p><h1>Find the car that feels like yours.</h1><p>Explore Mercedes-Benz vehicles, compare clear cash prices, and arrange a viewing with our Nairobi team.</p></div><a class="intro-browse" href="#/" data-scroll="inventory">Browse inventory <span aria-hidden="true">↘</span></a></div><form id="home-search" class="app-search-form"><div class="app-search"><span class="search-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg></span><input name="search" type="search" value="${escapeHTML(currentFilters.search)}" placeholder="Search cars, models…" aria-label="Search Mercedes-Benz cars"><button class="search-filter-button" type="button" data-action="toggle-search-filters" aria-label="${searchExpanded?"Hide":"Show"} search filters" aria-controls="advanced-search" aria-expanded="${searchExpanded}"><svg viewBox="0 0 24 24"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"></path><circle cx="13" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg></button></div>
       <div class="advanced-search ${searchExpanded?"expanded":""}" id="advanced-search"><div class="field"><label for="hero-make">Make</label><select id="hero-make" name="make">${selectOptions(makes,currentFilters.make,"Any make")}</select></div><div class="field"><label for="hero-model">Model</label><select id="hero-model" name="model">${selectOptions(models,currentFilters.model,"Any model")}</select></div><div class="field"><label for="hero-year">Year</label><select id="hero-year" name="year">${selectOptions(years,currentFilters.year,"Any year")}</select></div><div class="field"><label for="hero-body">Body style</label><select id="hero-body" name="body">${selectOptions(["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],currentFilters.body,"Any style")}</select></div><div class="field"><label for="hero-price">Max price</label><select id="hero-price" name="maxPrice">${priceFilterOptions()}</select></div><div class="field"><label for="hero-mileage">Max mileage</label><select id="hero-mileage" name="maxMileage">${selectOptions([25000,50000,75000,100000].map(String),currentFilters.maxMileage,"Any mileage")}</select></div><button class="btn btn-dark" type="submit">Apply filters <span>→</span></button></div></form>
       <nav class="mobile-category-rail" aria-label="Browse vehicle categories">${["All","Sports","SUV","Luxury"].map(category=>`<button type="button" class="mobile-category ${mobileCategory===category?"active":""}" data-mobile-category="${category}" aria-pressed="${mobileCategory===category}"><svg viewBox="0 0 24 24" aria-hidden="true">${categoryIcon(category)}</svg>${category}</button>`).join("")}</nav>
-      <div class="app-offer-heading"><h2>Discover Tristar Motors</h2><a href="#/" data-scroll="inventory">Browse cars</a></div><div class="offer-rail"><a href="#/" data-scroll="inventory" class="offer-card offer-card-link" aria-label="Browse Tristar Motors vehicles"><div class="offer-copy offer-copy-promo"><span>TRISTAR MOTORS</span><strong>${escapeHTML(dealer.tagline)}</strong><p>${escapeHTML(dealer.priceTagline)}</p><small class="offer-shop">Explore vehicles <b>→</b></small></div><img src="/images/brand/mercedes-26140.webp" alt="Mercedes-Benz at Tristar Motors" loading="eager"></a><article class="offer-card offer-card-secondary"><div class="offer-copy"><span>UPPER HILL · NAIROBI</span><strong>Viewing by appointment.</strong><p>${escapeHTML(dealer.address)}</p><a href="${waLink(undefined, `Hi ${dealer.name}, I'd like to arrange an appointment to view your vehicles.`)}" target="_blank" rel="noopener">Arrange a viewing <b>→</b></a></div><div class="offer-art" aria-hidden="true">↗</div></article></div><div class="offer-dots" aria-hidden="true"><i class="active"></i><i></i></div>
+      <div class="app-offer-heading"><h2>Discover Tristar Motors</h2></div><div class="offer-rail"><a href="#/" data-scroll="inventory" class="offer-card offer-card-link" aria-label="Browse Tristar Motors vehicles"><div class="offer-copy offer-copy-promo"><span>TRISTAR MOTORS</span><strong>${escapeHTML(dealer.tagline)}</strong><p>${escapeHTML(dealer.priceTagline)}</p><small class="offer-shop">Explore vehicles <b>→</b></small></div><img src="/images/brand/mercedes-26140.webp" alt="Mercedes-Benz at Tristar Motors" loading="eager"></a><article class="offer-card offer-card-secondary"><div class="offer-copy"><span>UPPER HILL · NAIROBI</span><strong>Viewing by appointment.</strong><p>${escapeHTML(dealer.address)}</p><a href="${waLink(undefined, `Hi ${dealer.name}, I'd like to arrange an appointment to view your vehicles.`)}" target="_blank" rel="noopener">Arrange a viewing <b>→</b></a></div><div class="offer-art" aria-hidden="true">↗</div></article></div><div class="offer-dots" aria-hidden="true"><i class="active"></i><i></i></div>
     </section>
     <section class="shell brand-section body-type-section"><div class="app-section-heading"><h2>Browse by vehicle type</h2><button class="plain-link" type="button" data-body-type="all">See all vehicles</button></div><div class="body-type-options" aria-label="Filter inventory by vehicle type">${bodyTypes.map(bodyTypePill).join("")}</div></section>
-    <section class="shell section app-inventory" id="inventory"><div class="app-section-heading deals-heading"><h2><span class="desktop-section-title">Top Deals</span><span class="mobile-section-title">Popular Cars</span></h2><span class="results-meta"><strong>${filtered.length}</strong> cars</span><a class="inventory-seeall" href="#/" data-scroll="inventory">See all <b>→</b></a></div><div class="inventory-filter-grid" aria-label="Filter inventory"><label class="inventory-filter"><span>Availability</span><select data-filter="availability" aria-label="Filter by availability"><option value="all" ${currentFilters.availability==="all"?"selected":""}>Any availability</option><option value="Available" ${currentFilters.availability==="Available"?"selected":""}>Available</option><option value="Not available" ${currentFilters.availability==="Not available"?"selected":""}>Not available</option><option value="Pending" ${currentFilters.availability==="Pending"?"selected":""}>Pending</option><option value="Sold" ${currentFilters.availability==="Sold"?"selected":""}>Sold</option></select></label><label class="inventory-filter"><span>Fuel</span><select data-filter="fuel" aria-label="Filter by fuel">${selectOptions(fuels,currentFilters.fuel,"Any fuel")}</select></label><label class="inventory-filter"><span>Vehicle type</span><select data-filter="body" aria-label="Filter by vehicle type">${selectOptions(["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],currentFilters.body,"Any type")}</select></label><label class="inventory-filter"><span>Transmission</span><select data-filter="transmission" aria-label="Filter by transmission">${selectOptions(transmissions,currentFilters.transmission,"Any transmission")}</select></label><label class="inventory-filter"><span>Make</span><select data-filter="make" aria-label="Filter by make">${selectOptions(makes,currentFilters.make,"Any make")}</select></label></div><div class="car-grid" id="car-grid">${filtered.length?filtered.map(card).join(""):`<div class="empty-state"><h3>No cars match those filters</h3><p>Try another availability, fuel type, vehicle type, transmission, or make.</p><button class="btn btn-dark" data-action="clear-filters">Clear filters</button></div>`}</div></section>
+    <section class="shell section app-inventory" id="inventory"><div class="app-section-heading deals-heading"><h2><span class="desktop-section-title">Top Deals</span><span class="mobile-section-title">Popular Cars</span></h2><span class="results-meta" aria-live="polite" aria-atomic="true"><strong>${filtered.length}</strong> cars</span><a class="inventory-seeall" href="#/" data-scroll="inventory">See all <b>→</b></a></div><div class="inventory-filter-grid" aria-label="Filter inventory"><label class="inventory-filter"><span>Availability</span><select data-filter="availability" aria-label="Filter by availability"><option value="all" ${currentFilters.availability==="all"?"selected":""}>Any availability</option><option value="Available" ${currentFilters.availability==="Available"?"selected":""}>Available</option><option value="Not available" ${currentFilters.availability==="Not available"?"selected":""}>Not available</option><option value="Pending" ${currentFilters.availability==="Pending"?"selected":""}>Pending</option><option value="Sold" ${currentFilters.availability==="Sold"?"selected":""}>Sold</option></select></label><label class="inventory-filter"><span>Fuel</span><select data-filter="fuel" aria-label="Filter by fuel">${selectOptions(fuels,currentFilters.fuel,"Any fuel")}</select></label><label class="inventory-filter"><span>Vehicle type</span><select data-filter="body" aria-label="Filter by vehicle type">${selectOptions(["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],currentFilters.body,"Any type")}</select></label><label class="inventory-filter"><span>Transmission</span><select data-filter="transmission" aria-label="Filter by transmission">${selectOptions(transmissions,currentFilters.transmission,"Any transmission")}</select></label><label class="inventory-filter"><span>Make</span><select data-filter="make" aria-label="Filter by make">${selectOptions(makes,currentFilters.make,"Any make")}</select></label></div><div class="car-grid" id="car-grid">${filtered.length?filtered.map(card).join(""):`<div class="empty-state"><h3>No cars match those filters</h3><p>Try another availability, fuel type, vehicle type, transmission, or make.</p><button class="btn btn-dark" data-action="clear-filters">Clear filters</button></div>`}</div></section>
     <section class="shell section"><div class="app-section-heading"><h2>Shop with confidence</h2></div><div class="trust-section"><article class="trust-card"><div class="trust-icon">KSh</div><h3>Clear cash prices</h3><p>Published vehicles show their cash price in KSh.</p></article><article class="trust-card"><div class="trust-icon">⌖</div><h3>View by appointment</h3><p>Arrange a visit to Tristar Motors on Masaba Road, Upper Hill.</p></article><article class="trust-card"><div class="trust-icon">✓</div><h3>Confirm availability</h3><p>Contact the team before visiting to confirm a vehicle is still available.</p></article></div></section>
     <section class="shell section" id="location"><div class="location-card"><div class="location-copy"><p class="eyebrow">COME SAY HELLO</p><h3>Visit Tristar Motors</h3><p>${escapeHTML(dealer.address)}<br>${escapeHTML(dealer.hours)}</p><a class="btn btn-dark btn-small" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(dealer.address)}">Get directions ↗</a></div><div class="map-panel"><img src="/images/brand/map.png" alt="Map location marker"></div></div></section></main>${footer()}${mobileTabbar("home")}<div class="toast hidden"></div>`;
   wireCommon();
@@ -280,7 +281,8 @@ function mobileTabbar(active){return `<nav class="mobile-tabbar" aria-label="App
 function renderVehicle(id) {
   disposeViewer?.(); disposeViewer = null;
   const car = carById(decodeURIComponent(id));
-  if (!car || !(Number(car.price) > 0)) { renderNotFound(); return; }
+  if (!car || car.make !== "Mercedes-Benz" || !(Number(car.price) > 0)) { renderNotFound(); return; }
+  document.title = `${car.year} Mercedes-Benz ${car.model} | Tristar Motors`;
   const trim = distinctTrim(car);
   const groupedGallery=car.galleryByCategory
     ? photoCategories.flatMap(([key])=>car.galleryByCategory[key]||[])
@@ -306,6 +308,20 @@ function renderVehicle(id) {
           </div>
           <div class="photo-strip">${gallery.map((src,i)=>`<button class="photo-thumb ${i===0?"active":""}" type="button" data-gallery="${i}" aria-label="Show vehicle photo ${i+1}"><img src="${escapeHTML(src)}" alt="" loading="lazy"></button>`).join("")}</div>
           <p class="required-note">${frameUrls.length>=24?"Drag, swipe, or use arrow keys to rotate the exterior.":"360° rotation activates when 24–36 vehicle frame images are added to this listing."}</p>
+          <section class="vehicle-highlights section" aria-labelledby="vehicle-highlights-title">
+            <div class="highlights-heading">
+              <p class="eyebrow">The details</p>
+              <h2 class="section-title" id="vehicle-highlights-title">Technical specifications</h2>
+            </div>
+            <div class="features-grid">
+              <div class="feature-item"><span>Transmission</span><strong>${escapeHTML(car.transmission)}</strong></div>
+              <div class="feature-item"><span>Engine</span><strong>${escapeHTML(car.engine)}</strong></div>
+              <div class="feature-item"><span>Fuel</span><strong>${escapeHTML(car.fuel)}</strong></div>
+              <div class="feature-item"><span>Mileage</span><strong>${number(car.mileage)} mi</strong></div>
+              <div class="feature-item"><span>Body style</span><strong>${escapeHTML(car.body)}</strong></div>
+              <div class="feature-item"><span>Availability</span><strong>${escapeHTML(statusLabel(car.status))}</strong></div>
+            </div>
+          </section>
         </div>
         <aside class="detail-side">
           <section class="detail-title-card">
@@ -313,26 +329,13 @@ function renderVehicle(id) {
             <h1>${escapeHTML(car.year)} ${escapeHTML(car.make)} ${escapeHTML(car.model)}${trim?` ${escapeHTML(trim)}`:""}</h1>
             <p class="vin-line">VIN ${escapeHTML(car.vin)} · ${number(car.mileage)} miles</p>
             <div class="vehicle-price">
+              <span>Cash price</span>
               <strong>${priceLabel(car.price)}</strong>
             </div>
             <p class="vehicle-description">${escapeHTML(vehicleDescription(car))}</p>
             <a class="whatsapp vehicle-test-drive" href="${waLink(car, `Hi ${dealer.name}, I'd like to book a test drive for the ${car.year} ${car.make} ${car.model} (VIN ${car.vin}).`)}" target="_blank" rel="noopener">Book a test drive</a>
           </section>
         </aside>
-      </section>
-      <section class="vehicle-highlights section" aria-labelledby="vehicle-highlights-title">
-        <div class="highlights-heading">
-          <p class="eyebrow">The details</p>
-          <h2 class="section-title" id="vehicle-highlights-title">Vehicle highlights</h2>
-        </div>
-        <div class="features-grid">
-          <div class="feature-item"><span>Transmission</span><strong>${escapeHTML(car.transmission)}</strong></div>
-          <div class="feature-item"><span>Engine</span><strong>${escapeHTML(car.engine)}</strong></div>
-          <div class="feature-item"><span>Fuel</span><strong>${escapeHTML(car.fuel)}</strong></div>
-          <div class="feature-item"><span>Mileage</span><strong>${number(car.mileage)} mi</strong></div>
-          <div class="feature-item"><span>Body style</span><strong>${escapeHTML(car.body)}</strong></div>
-          <div class="feature-item"><span>Availability</span><strong>${escapeHTML(statusLabel(car.status))}</strong></div>
-        </div>
       </section>
     </main>
     ${footer()}<div class="toast hidden"></div>`;
@@ -355,7 +358,7 @@ function statusControl(car) {
 
 function renderAdminLogin() {
   const configured = adminSession?.configured;
-  app.innerHTML = `${header()}<main class="shell admin-shell"><section class="admin-login-card"><p class="eyebrow">TRISTAR MOTORS · LOCAL ADMIN</p><h1>Administrator sign in</h1>${configured ? `<p>Sign in as Allan to manage vehicle inventory.</p><form id="admin-login-form"><label class="field"><span class="field-label">Administrator</span><input name="username" value="Allan" readonly autocomplete="username"></label><label class="field"><span class="field-label">Password</span><input name="password" type="password" required autocomplete="current-password"></label><p class="login-error" id="login-error" role="alert"></p><button class="btn btn-primary" type="submit">Sign in</button></form>` : `<p>Administrator sign-in is not configured. Set <code>TRISTAR_ADMIN_PASSWORD</code> (at least 12 characters) in the shell before starting the local app, then reload this page.</p>`}<p class="admin-local-note">Local prototype only. The API accepts connections from this computer; this login is not production security.</p></section></main>${footer()}<div class="toast hidden"></div>`;
+  app.innerHTML = `${header()}<main class="shell admin-shell"><section class="admin-login-card"><p class="eyebrow">TRISTAR MOTORS · ADMIN</p><h1>Administrator sign in</h1>${configured ? `<p>Sign in to manage cars and customer messages.</p><form id="admin-login-form"><label class="field"><span class="field-label">Administrator</span><input name="username" value="Allan" readonly autocomplete="username"></label><label class="field"><span class="field-label">Password</span><input name="password" type="password" required autocomplete="current-password"></label><p class="login-error" id="login-error" role="alert"></p><button class="btn btn-primary" type="submit">Sign in</button></form>` : adminSession?.error ? `<p>Could not connect to the admin server. Start the site server, then reload this page.</p>` : `<p>Administrator sign-in is not set up. Add TRISTAR_ADMIN_PASSWORD in the server settings, then reload this page.</p>`}<p class="admin-local-note">Only people with the admin password can make changes here.</p></section></main>${footer()}<div class="toast hidden"></div>`;
   document.querySelector("#admin-login-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -397,10 +400,15 @@ function renderAdmin(){
   const edit=editId?carById(editId):null;
   const rows=isLeads
     ? store.leads.map((lead,index)=>`<tr><td>${new Date(lead.createdAt).toLocaleString()}</td><td>${escapeHTML(lead.type)}</td><td>${escapeHTML(lead.name||"—")}</td><td>${escapeHTML(lead.phone||lead.email||"—")}</td><td>${escapeHTML(lead.vehicle||"—")}</td><td>${escapeHTML(lead.notes||lead.date||"—")}</td><td><button class="table-action delete" data-action="delete-lead" data-id="${index}">Remove</button></td></tr>`).join("")
-    : store.cars.map(car=>`<tr><td>${car.year} ${escapeHTML(car.make)} ${escapeHTML(car.model)}</td><td>${escapeHTML(car.vin)}</td><td>${priceLabel(car.price)}</td><td>${number(car.mileage)} mi</td><td>${statusControl(car)}</td><td><div class="table-actions"><button class="table-action" data-action="edit-car" data-id="${escapeHTML(car.id)}">Edit</button><button class="table-action delete" data-action="delete-car" data-id="${escapeHTML(car.id)}">Remove</button></div></td></tr>`).join("");
-  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">LOCAL DEALER WORKSPACE</p><h1>Inventory &amp; leads</h1><p class="text-muted" style="font-size:11px">Manage vehicle listings and availability on this computer.</p></div><div class="admin-session-actions"><a class="btn btn-light" href="#/">← View storefront</a><button class="btn btn-light" type="button" data-action="admin-logout">Sign out Allan</button></div></div><div class="admin-notice"><strong>Local prototype:</strong> inventory is saved to SQLite on this computer. The API only accepts connections from this computer; keep it off networks and do not use it for production customer data.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Open customer leads</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Customer leads (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Test-drive and trade-in requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads?`<section class="admin-form-card" id="vehicle-editor"><h2>${edit?"Edit vehicle":"Add a vehicle"}</h2><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><div class="admin-form-grid">${inputField("year","Year",edit?.year||new Date().getFullYear(),"number","required min=1980 max=2035")}${inputField("make","Make",edit?.make||"","text","required")}${inputField("model","Model",edit?.model||"","text","required")}${inputField("trim","Trim",edit?.trim||"")}${selectField("body","Body style",["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],edit?.body||"SUV")}${inputField("price","Cash price (KSh)",edit?.price??"","number","min=1")}${inputField("mileage","Mileage",edit?.mileage||"","number","required min=0")}${selectField("transmission","Transmission",inventoryFieldOptions("transmission",["Automatic","Manual","CVT","Single-speed"]),edit?.transmission||"Automatic")}${inputField("engine","Engine",edit?.engine||"")}${selectField("fuel","Fuel type",inventoryFieldOptions("fuel",["Petrol","Diesel","Electric","Hybrid","Plug-in Hybrid","Other"]),edit?.fuel||"Petrol")}${inputField("vin","VIN",edit?.vin||"","text","required minlength=11")}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"In Stock")}${inputField("image","Primary image URL",edit?.image||"")}${inputField("frameBase","360 frame URL base",edit?.frameBase||"","text")}</div><p class="required-note">Only priced vehicles appear in the storefront. Leave this blank while confirming the cash price. Front uploads can become the main picture.</p><label class="field" style="margin-top:10px"><span class="field-label">Badge tags, comma separated</span><input name="badges" value="${escapeHTML((edit?.badges||[]).join(", "))}" placeholder="Clean Title, Single Owner"></label><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Select images from this device. Review each preview, then convert and upload to the local WebP gallery.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">A 360 frame URL base should contain “{frame}”, e.g. /images/cars/stock-id/frame-{frame}.webp. Upload 24–36 numbered frames.</p><div class="modal-actions"><button class="btn btn-primary" type="submit">${edit?"Save changes":"Add vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="cancel-edit">Cancel edit</button>`:""}<button class="link-button" type="button" data-action="reset-demo">Restore sample inventory</button></div></form></section>`:""}</main>${footer()}<div class="toast hidden"></div>`;
+    : store.cars.map(car=>`<tr><td>${car.year} ${escapeHTML(car.make)} ${escapeHTML(car.model)}</td><td>${escapeHTML(car.vin||"—")}</td><td>${priceLabel(car.price)}</td><td>${number(car.mileage)} km</td><td>${statusControl(car)}</td><td><div class="table-actions"><button class="table-action" data-action="edit-car" data-id="${escapeHTML(car.id)}">Edit</button><button class="table-action delete" data-action="delete-car" data-id="${escapeHTML(car.id)}">Remove</button></div></td></tr>`).join("");
+  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><a class="btn btn-light" href="/">View website</a></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Customer inquiries</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Inquiries (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Customer messages and requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads&&(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit vehicle":"Add a vehicle"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><section class="vehicle-form-step" data-vehicle-step="details"><div class="admin-form-grid">${inputField("year","Year",edit?.year||new Date().getFullYear(),"number","required min=1980 max=2035")}${inputField("make","Make",edit?.make||"Mercedes-Benz","text","required")}${inputField("class","Class",edit?.class||"")}${inputField("chassis","Chassis",edit?.chassis||"")}${inputField("model","Model",edit?.model||"","text","required")}${inputField("trim","Trim",edit?.trim||"")}${selectField("body","Body style",["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],edit?.body||"SUV")}${inputField("price","Cash price (KSh)",edit?.price??"","number","min=1")}${inputField("mileage","Mileage (km)",edit?.mileage||"","number","required min=0")}${selectField("transmission","Transmission",inventoryFieldOptions("transmission",["Automatic","Manual","CVT","Single-speed"]),edit?.transmission||"Automatic")}${inputField("engine","Engine",edit?.engine||"")}${inputField("drivetrain","Drivetrain",edit?.drivetrain||"")}${inputField("power","Power",edit?.power||"")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"")}${inputField("color","Exterior colour",edit?.color||"")}${inputField("interior","Interior",edit?.interior||"")}${inputField("condition","Condition",edit?.condition||"")}${selectField("fuel","Fuel type",inventoryFieldOptions("fuel",["Petrol","Diesel","Electric","Hybrid","Plug-in Hybrid","Other"]),edit?.fuel||"Petrol")}${inputField("vin","VIN",edit?.vin||"")}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"In Stock")}${inputField("image","Primary image URL",edit?.image||"")}${inputField("frameBase","360 frame URL base",edit?.frameBase||"","text")}</div><p class="required-note">These details appear on the home page and vehicle page. Leave the price blank to keep the car hidden.</p><div class="admin-description-fields">${textareaField("description","Description",edit?.description||"")}${textareaField("featuresText","Features (one per line)",(edit?.features||[]).join("\n"))}</div><label class="field" style="margin-top:10px"><span class="field-label">Badge tags, comma separated</span><input name="badges" value="${escapeHTML((edit?.badges||[]).join(", "))}" placeholder="In stock, Low mileage"></label></section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">For a 360° view, add 24–36 numbered photos and set the frame URL.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}</main>${footer()}<div class="toast hidden"></div>`;
   renderGalleryUploadWorkspace();
   wireCommon();
+  const vehicleDialog=document.querySelector("#vehicle-editor");
+  if(vehicleDialog&&!vehicleDialog.open)vehicleDialog.showModal();
+  if(vehicleDialog)setVehicleStep("details");
+  vehicleDialog?.addEventListener("click",event=>{if(event.target===vehicleDialog)closeVehicleModal();});
+  vehicleDialog?.addEventListener("cancel",event=>{event.preventDefault();closeVehicleModal();});
   document.querySelector("[data-action='admin-logout']")?.addEventListener("click", async () => {
     try {
       await apiRequest("/api/auth/logout", { method: "POST" });
@@ -429,21 +437,22 @@ function renderAdmin(){
   document.querySelector("#car-form")?.addEventListener("submit",async(event)=>{
     event.preventDefault();const form=new FormData(event.currentTarget);const base=String(form.get("frameBase")||"").trim();
     if(uploadInProgress){toast("Wait for image uploads to finish before saving.");return;}
-    if(photoCategories.some(([key])=>pendingPhotoFiles[key].length)){toast("Convert and upload the selected image previews before saving.");return;}
-    const fields={year:Number(form.get("year")),make:String(form.get("make")).trim(),model:String(form.get("model")).trim(),trim:String(form.get("trim")).trim(),body:String(form.get("body")),price:form.get("price")===""?null:Number(form.get("price")),mileage:Number(form.get("mileage")),transmission:String(form.get("transmission")).trim(),engine:String(form.get("engine")).trim(),fuel:String(form.get("fuel")).trim(),vin:String(form.get("vin")).trim().toUpperCase(),status:String(form.get("status")),image:String(form.get("image")).trim()||"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1000&q=80",badges:String(form.get("badges")).split(",").map(s=>s.trim()).filter(Boolean)};
-    fields.id=editId||`${fields.make}-${fields.model}`.toLowerCase().replace(/[^a-z0-9]+/g,"-");fields.galleryByCategory=structuredClone(draftGallery);fields.gallery=photoCategories.flatMap(([key])=>fields.galleryByCategory[key]);if(!fields.gallery.length)fields.gallery=[fields.image];fields.frameBase=base;fields.frames=base.includes("{frame}")?Array.from({length:24},(_,i)=>base.replace("{frame}",String(i+1).padStart(2,"0"))):[];
+    if(photoCategories.some(([key])=>pendingPhotoFiles[key].length)){toast("Upload the selected photos before saving.");return;}
+    const fields={year:Number(form.get("year")),make:String(form.get("make")).trim(),model:String(form.get("model")).trim(),trim:String(form.get("trim")).trim(),body:String(form.get("body")),price:form.get("price")===""?null:Number(form.get("price")),mileage:Number(form.get("mileage")),transmission:String(form.get("transmission")).trim(),engine:String(form.get("engine")).trim(),class:String(form.get("class")).trim(),chassis:String(form.get("chassis")).trim(),drivetrain:String(form.get("drivetrain")).trim(),power:String(form.get("power")).trim(),acceleration:String(form.get("acceleration")).trim(),color:String(form.get("color")).trim(),interior:String(form.get("interior")).trim(),condition:String(form.get("condition")).trim(),description:String(form.get("description")).trim(),features:String(form.get("featuresText")).split(/\r?\n/).map(value=>value.trim()).filter(Boolean),type:String(form.get("body")),fuel:String(form.get("fuel")).trim(),vin:String(form.get("vin")).trim().toUpperCase(),status:String(form.get("status")),image:String(form.get("image")).trim()||"/images/cars/g350d_front.jpg",badges:String(form.get("badges")).split(",").map(s=>s.trim()).filter(Boolean)};
+    fields.id=editId||`${fields.make}-${fields.model}`.toLowerCase().replace(/[^a-z0-9]+/g,"-");fields.badge=String(form.get("badges")).split(",").map(value=>value.trim()).filter(Boolean)[0]||"Available";fields.galleryByCategory=structuredClone(draftGallery);fields.gallery=photoCategories.flatMap(([key])=>fields.galleryByCategory[key]);if(!fields.gallery.length)fields.gallery=[fields.image];fields.frameBase=base;fields.frames=base.includes("{frame}")?Array.from({length:24},(_,i)=>base.replace("{frame}",String(i+1).padStart(2,"0"))):[];
     try {
       const method=editId?"PUT":"POST";
       const savedCar=await apiRequest(editId?`/api/cars/${encodeURIComponent(fields.id)}`:"/api/cars",{method,body:JSON.stringify(fields)});
       if(editId)store.cars=store.cars.map(car=>car.id===savedCar.id?savedCar:car);
       else store.cars=[savedCar,...store.cars];
-      editId=null;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();adminTab="inventory";renderAdmin();toast("Vehicle listing saved");
+      editId=null;vehicleModalOpen=false;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();adminTab="inventory";renderAdmin();toast("Vehicle listing saved");
     } catch(error) {
       toast(`Could not save vehicle: ${error.message}`);
     }
   });
 }
 function inputField(name,label,value="",type="text",extra="") { return `<label class="field"><span class="field-label">${label}</span><input name="${name}" type="${type}" value="${escapeHTML(value)}" ${extra}></label>`; }
+function textareaField(name,label,value="") { return `<label class="field"><span class="field-label">${label}</span><textarea name="${name}" rows="4">${escapeHTML(value)}</textarea></label>`; }
 function inventoryFieldOptions(field, additional=[]) {
   return [...new Set([...store.cars.map(car=>car[field]).filter(Boolean),...additional])].sort((a,b)=>a.localeCompare(b));
 }
@@ -454,32 +463,51 @@ function wireCommon(){
   document.querySelectorAll("[data-saved-view]").forEach(button=>button.addEventListener("click",()=>{currentFilters.saved=!currentFilters.saved;mobileCategory="All";location.hash="#/";renderHome();document.querySelector("#inventory")?.scrollIntoView({behavior:"smooth"});}));
   document.querySelectorAll("[data-scroll]").forEach(a=>a.addEventListener("click",event=>{event.preventDefault();const scrollToTarget=()=>document.getElementById(a.dataset.scroll)?.scrollIntoView({behavior:"smooth",block:"start"});if(route()!=="#/"){location.hash="#/";setTimeout(scrollToTarget,80);}else scrollToTarget();}));
 }
+function closeVehicleModal(){
+  vehicleModalOpen=false;
+  editId=null;
+  for(const photos of Object.values(pendingPhotoFiles))for(const photo of photos)URL.revokeObjectURL(photo.preview);
+  draftGallery=emptyDraftGallery();
+  pendingPhotoFiles=emptyDraftGallery();
+  renderAdmin();
+}
+function setVehicleStep(step){
+  document.querySelectorAll("[data-vehicle-step]").forEach(section=>section.hidden=section.dataset.vehicleStep!==step);
+  document.querySelectorAll("[data-step-actions]").forEach(actions=>actions.hidden=actions.dataset.stepActions!==step);
+  document.querySelectorAll("[data-step-indicator]").forEach(label=>label.classList.toggle("active",label.dataset.stepIndicator===step));
+  if(step==="photos")renderGalleryUploadWorkspace();
+  document.querySelector("#vehicle-editor .admin-form-card")?.scrollTo({top:0,behavior:"smooth"});
+}
 function handleClick(event){
   const fav=event.target.closest("[data-favorite]");if(fav){const id=fav.dataset.favorite;store.favorites=store.favorites.includes(id)?store.favorites.filter(v=>v!==id):[...store.favorites,id];save();const detail=route().match(/^#\/cars\/([^/?]+)/);detail?renderVehicle(detail[1]):renderHome();return;}
   const tab=event.target.closest("[data-admin-tab]");if(tab)return;
   const button=event.target.closest("[data-action]");if(!button)return;
   const action=button.dataset.action,id=button.dataset.id||button.dataset.car;
+  if(action==="open-vehicle-modal"){vehicleModalOpen=true;editId=null;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();renderAdmin();setVehicleStep("details");return;}
+  if(action==="close-vehicle-modal"){closeVehicleModal();return;}
+  if(action==="vehicle-step-next"){const form=document.querySelector("#car-form");if(form&&form.reportValidity())setVehicleStep("photos");return;}
+  if(action==="vehicle-step-back"){setVehicleStep("details");return;}
   if(action==="upload-photos"){uploadSelectedPhotos();return;}
   if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;toast("Main vehicle picture updated");return;}
   if(action==="clear-filters"){currentFilters={make:"all",model:"all",year:"all",body:"all",maxPrice:"all",maxMileage:"all",availability:"all",fuel:"all",transmission:"all",search:"",saved:false};mobileCategory="All";renderHome();}
-  if(action==="toggle-search-filters"){searchExpanded=!searchExpanded;document.querySelector("#advanced-search")?.classList.toggle("expanded",searchExpanded);}
+  if(action==="toggle-search-filters"){searchExpanded=!searchExpanded;document.querySelector("#advanced-search")?.classList.toggle("expanded",searchExpanded);button.setAttribute("aria-expanded",String(searchExpanded));button.setAttribute("aria-label",`${searchExpanded?"Hide":"Show"} search filters`);}
   if(action==="toggle-filters")document.querySelector("#filter-panel")?.classList.toggle("expanded");
-  if(action==="edit-car"){editId=id;draftGallery=readDraftGallery(carById(id));pendingPhotoFiles=emptyDraftGallery();renderAdmin();document.querySelector("#vehicle-editor")?.scrollIntoView({behavior:"smooth"});}
-  if(action==="cancel-edit"){editId=null;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();renderAdmin();}
+  if(action==="edit-car"){editId=id;vehicleModalOpen=true;draftGallery=readDraftGallery(carById(id));pendingPhotoFiles=emptyDraftGallery();renderAdmin();setVehicleStep("details");}
+  if(action==="cancel-edit"){editId=null;vehicleModalOpen=false;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();renderAdmin();}
   if(action==="delete-car"&&confirm("Remove this vehicle from inventory?")){apiRequest(`/api/cars/${encodeURIComponent(id)}`,{method:"DELETE"}).then(()=>{store.cars=store.cars.filter(car=>car.id!==id);renderAdmin();toast("Vehicle removed");}).catch(error=>toast(`Could not remove vehicle: ${error.message}`));}
   if(action==="delete-lead"&&confirm("Remove this customer lead?")){store.leads.splice(Number(id),1);save();renderAdmin();toast("Lead removed");}
-  if(action==="reset-demo"&&confirm("Restore the original sample inventory and clear local leads and favorites?")){apiRequest("/api/reset",{method:"POST"}).then(cars=>{store=resetDemoStore();store.cars=cars;editId=null;renderAdmin();toast("Sample inventory restored");}).catch(error=>toast(`Could not restore inventory: ${error.message}`));}
+  if(action==="reset-demo"&&confirm("Restore the starting cars and clear saved cars and inquiries?")){apiRequest("/api/reset",{method:"POST"}).then(cars=>{store=resetDemoStore();store.cars=cars;editId=null;renderAdmin();toast("Sample inventory restored");}).catch(error=>toast(`Could not restore inventory: ${error.message}`));}
 }
 
 function render(){
   if(!inventoryLoaded)return;
-  document.title=route().startsWith("#/admin")?"Dealer Portal | Tristar Motors":"Tristar Motors — Find your next drive";
   const r=route();
-  if(r.startsWith("#/admin")){renderAdmin();return;}
-  const detail=r.match(/^#\/cars\/([^/?]+)/);
-  if(detail){renderVehicle(detail[1]);return;}
-  currentFilters.saved=new URLSearchParams(r.split("?")[1]||"").get("saved")==="1";
-  renderHome();
+  if(!r.startsWith("#/admin")){
+    location.hash="#/admin";
+    return;
+  }
+  document.title="Admin | Tristar Motors";
+  renderAdmin();
 }
 if ("scrollRestoration" in history) history.scrollRestoration="manual";
 window.addEventListener("hashchange",()=>{
@@ -491,7 +519,7 @@ window.addEventListener("hashchange",()=>{
 app.addEventListener("click", handleClick);
 refreshInventory().then(render).catch((error)=>{
   console.error("Could not load vehicle inventory:",error);
-  app.innerHTML=`${header()}<main class="shell section"><h1>Inventory service unavailable</h1><p>${escapeHTML(error.message)} Start the local app with <code>npm run dev</code>, then reload this page.</p></main>${footer()}`;
+  app.innerHTML=`${header()}<main class="shell section admin-connection-error"><h1>Admin server not connected</h1><p>Start the site with <code>npm run dev</code>, then reload this page.</p><a class="btn btn-dark" href="/">Back to website</a></main>${footer()}`;
 });
 
 // Shared delegated UI listeners for changes/submit events that survive rerenders.

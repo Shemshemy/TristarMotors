@@ -1,0 +1,444 @@
+[
+  {
+    "id": "c180-avantgarde-2014",
+    "make": "Mercedes-Benz",
+    "class": "C-Class",
+    "model": "C180 BlueEFFICIENCY Avantgarde",
+    "chassis": "W204 Facelift",
+    "year": 2014,
+    "price": 2380000,
+    "mileage": 78200,
+    "type": "Sedan",
+    "transmission": "7G-TRONIC Plus Auto",
+    "fuel": "Petrol",
+    "engine": "1.6L Turbo M274 (156 hp)",
+    "drivetrain": "Rear-Wheel Drive",
+    "power": "156 hp / 250 Nm",
+    "acceleration": "8.5s (0-100)",
+    "color": "Polar White",
+    "interior": "Black Leather / Brushed Aluminium",
+    "image": "/images/cars/c180_front.jpg",
+    "gallery": [
+      "/images/cars/c180_front.jpg",
+      "/images/cars/c180_rear.jpg",
+      "/images/cars/c180_interior.jpg"
+    ],
+    "badge": "In Stock · Duty Paid",
+    "condition": "Accident Free · Grade 4.5 Import",
+    "features": [
+      "Avantgarde Exterior Styling & Grille",
+      "Half Leather Ergonomic Seats",
+      "Multifunction Steering Wheel with Paddle Shifters",
+      "Bi-Xenon Intelligent Headlights with LED DRLs",
+      "Dual-Zone Automatic Climate Control",
+      "ECO Start/Stop System",
+      "Front & Rear Parktronic Sensors",
+      "Original Mercedes-Benz Audio 20 System"
+    ],
+    "description": "A clean, well-kept C180 with a comfortable interior and good fuel economy. Papers are ready for transfer.",
+    "body": "Sedan",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "In Stock · Duty Paid"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/c180_front.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/c180_rear.jpg",
+        "/images/cars/c180_interior.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "e220d-all-terrain-2017",
+    "make": "Mercedes-Benz",
+    "class": "E-Class",
+    "model": "E220D All-Terrain 4MATIC Estate",
+    "chassis": "W213 S213",
+    "year": 2017,
+    "price": 4250000,
+    "mileage": 64100,
+    "type": "Wagon",
+    "transmission": "9G-TRONIC Auto",
+    "fuel": "Diesel",
+    "engine": "2.0L OM654 Turbo Diesel (194 hp)",
+    "drivetrain": "4MATIC All-Wheel Drive",
+    "power": "194 hp / 400 Nm",
+    "acceleration": "8.0s (0-100)",
+    "color": "Diamond White Metallic",
+    "interior": "Black Nappa Leather / Open-Pore Ash Wood",
+    "image": "/images/cars/e220d_rear.jpg",
+    "gallery": [
+      "/images/cars/e220d_rear.jpg",
+      "/images/cars/e220d_side.jpg",
+      "/images/cars/e220d_cockpit.jpg"
+    ],
+    "badge": "Rare 4MATIC Wagon",
+    "condition": "Clean Title · High Spec",
+    "features": [
+      "AIR BODY CONTROL Multi-Chamber Air Suspension",
+      "All-Terrain 4MATIC All-Wheel Drive System",
+      "Dual 12.3-inch Widescreen Digital Cockpit",
+      "Panoramic Sliding Glass Sunroof",
+      "MULTIBEAM LED Headlamps with Adaptive Highbeam",
+      "Burmester Surround Sound System",
+      "360-Degree Surround View Cameras",
+      "Hands-Free Access Electric Tailgate"
+    ],
+    "description": "A roomy E-Class wagon with four-wheel drive and extra ground clearance. Comfortable in town and on longer trips.",
+    "body": "Wagon",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "Rare 4MATIC Wagon"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/e220d_rear.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/e220d_side.jpg",
+        "/images/cars/e220d_cockpit.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "g350d-amg-2020",
+    "make": "Mercedes-Benz",
+    "class": "G-Class",
+    "model": "G350d AMG Line 4MATIC",
+    "chassis": "W463 (New Gen)",
+    "year": 2020,
+    "price": 16000000,
+    "mileage": 38500,
+    "type": "SUV",
+    "transmission": "9G-TRONIC Auto",
+    "fuel": "Diesel",
+    "engine": "3.0L OM656 Inline-6 Turbo (286 hp)",
+    "drivetrain": "Permanent 4MATIC (3 Diff Locks)",
+    "power": "286 hp / 600 Nm",
+    "acceleration": "7.4s (0-100)",
+    "color": "Polar White",
+    "interior": "Designo Black Leather / Piano Black Trim",
+    "image": "/images/cars/g350d_front.jpg",
+    "gallery": [
+      "/images/cars/g350d_front.jpg",
+      "/images/cars/g350d_headon.jpg",
+      "/images/cars/g350d_rear.jpg"
+    ],
+    "badge": "Flagship G-Wagon",
+    "condition": "Showroom Condition · 1 Owner",
+    "features": [
+      "AMG Line Bodystyling & Flared Wheel Arches",
+      "20-inch AMG Multi-Spoke Titanium Grey Alloy Wheels",
+      "Three 100% Independent Differential Locks",
+      "Burmester Premium Surround Sound Audio",
+      "Dual 12.3-inch High-Resolution Digital Screens",
+      "LED High Performance Headlights with Round DRL Rings",
+      "Active Lane Keeping & Distronic Adaptive Cruise",
+      "Electric Sunroof with Tilt & Slide Function"
+    ],
+    "description": "A 2020 G-Class with AMG styling, a leather interior, and a strong diesel engine. Checked and ready to view.",
+    "body": "SUV",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "Flagship G-Wagon"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/g350d_front.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/g350d_headon.jpg",
+        "/images/cars/g350d_rear.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "cls350-amg-2012",
+    "make": "Mercedes-Benz",
+    "class": "CLS-Class",
+    "model": "CLS 350 BlueEFFICIENCY AMG Sport",
+    "chassis": "C218",
+    "year": 2012,
+    "price": 2350000,
+    "mileage": 82400,
+    "type": "Coupe",
+    "transmission": "7G-TRONIC Plus Auto",
+    "fuel": "Petrol",
+    "engine": "3.5L V6 M276 (306 hp)",
+    "drivetrain": "Rear-Wheel Drive",
+    "power": "306 hp / 370 Nm",
+    "acceleration": "6.1s (0-100)",
+    "color": "Calcite White",
+    "interior": "Black Anthracite Leather / Black Ash Wood",
+    "image": "/images/cars/cls350_side.jpg",
+    "gallery": [
+      "/images/cars/cls350_side.jpg",
+      "/images/cars/cls350_rear.jpg"
+    ],
+    "badge": "4-Door Luxury Coupe",
+    "condition": "Accident Free · Duty Paid",
+    "features": [
+      "Original AMG Sport Body Styling & Side Skirts",
+      "Frameless Coupe Doors with Acoustic Glass",
+      "LED High Performance Headlights",
+      "Electric Glass Sunroof",
+      "Multi-Contour Memory Electric Seats",
+      "Harmon Kardon Logic 7 Sound System",
+      "Speedtronic Cruise Control",
+      "Parktronic Front & Rear Parking Sensors"
+    ],
+    "description": "A stylish four-door CLS with a smooth 3.5L V6 engine. The car is in good condition and has a Nairobi logbook.",
+    "body": "Coupe",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "4-Door Luxury Coupe"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/cls350_side.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/cls350_rear.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "ml350-amg-2013",
+    "make": "Mercedes-Benz",
+    "class": "GLC & ML",
+    "model": "ML 350 4MATIC AMG Sport",
+    "chassis": "W166",
+    "year": 2013,
+    "price": 3600000,
+    "mileage": 71000,
+    "type": "SUV",
+    "transmission": "7G-TRONIC Plus Auto",
+    "fuel": "Petrol",
+    "engine": "3.5L V6 Direct Injection (302 hp)",
+    "drivetrain": "4MATIC All-Wheel Drive",
+    "power": "302 hp / 370 Nm",
+    "acceleration": "7.6s (0-100)",
+    "color": "Diamond White",
+    "interior": "Beige Perforated Leather / Burl Walnut",
+    "image": "/images/cars/ml350_front.jpg",
+    "gallery": [
+      "/images/cars/ml350_front.jpg",
+      "/images/cars/ml350_rear.jpg"
+    ],
+    "badge": "4MATIC Luxury SUV",
+    "condition": "Full Service History · Clean Interior",
+    "features": [
+      "AMG Sport Exterior Package & Front Apron",
+      "Panoramic Sliding Panoramic Glass Roof",
+      "Full-Time 4MATIC All-Wheel Drive System",
+      "Bi-Xenon Headlamps with Intelligent Light System",
+      "Easy-Pack Electrically Operated Tailgate",
+      "Keyless-GO Entry & Push Button Start",
+      "Heated Front Seats with Electric Memory",
+      "Rear Reversing Camera with Parking Guidance"
+    ],
+    "description": "A comfortable ML350 SUV with plenty of space and ground clearance for Kenyan roads.",
+    "body": "SUV",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "4MATIC Luxury SUV"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/ml350_front.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/ml350_rear.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "s320l-cdi-2008",
+    "make": "Mercedes-Benz",
+    "class": "S-Class",
+    "model": "S320L CDI Long Wheelbase",
+    "chassis": "W221",
+    "year": 2008,
+    "price": 1850000,
+    "mileage": 94300,
+    "type": "Sedan",
+    "transmission": "7G-TRONIC Auto",
+    "fuel": "Diesel",
+    "engine": "3.0L V6 Turbo Diesel OM642 (235 hp)",
+    "drivetrain": "Rear-Wheel Drive",
+    "power": "235 hp / 540 Nm",
+    "acceleration": "7.8s (0-100)",
+    "color": "Iridium Silver Metallic",
+    "interior": "Exclusive Grey Nappa Leather / Dark Walnut",
+    "image": "/images/cars/s320l_front.jpg",
+    "gallery": [
+      "/images/cars/s320l_front.jpg",
+      "/images/cars/s320l_rear.jpg"
+    ],
+    "badge": "Executive LWB",
+    "condition": "Chauffeur Kept · Pristine Air Ride",
+    "features": [
+      "Long Wheelbase with Generous Rear Legroom",
+      "AIRMATIC Air Suspension with Level Control",
+      "Power Soft-Close Doors & Bootlid",
+      "Double-Glazed Heat & Sound Insulating Glass",
+      "Rear Electrically Adjustable Executive Seats",
+      "COMAND Navigation with 6-Disc DVD Changer",
+      "Night View Assist Infrared Camera",
+      "Electric Rear Window Sunblinds"
+    ],
+    "description": "A long-wheelbase S-Class with a roomy back seat and a diesel engine. Made for comfortable longer drives.",
+    "body": "Sedan",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "Executive LWB"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/s320l_front.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/s320l_rear.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "c200-cgi-2012",
+    "make": "Mercedes-Benz",
+    "class": "C-Class",
+    "model": "C200 BlueEFFICIENCY Avantgarde",
+    "chassis": "W204",
+    "year": 2012,
+    "price": 1600000,
+    "mileage": 89500,
+    "type": "Sedan",
+    "transmission": "7G-TRONIC Plus Auto",
+    "fuel": "Petrol",
+    "engine": "1.8L Turbo M271 (184 hp)",
+    "drivetrain": "Rear-Wheel Drive",
+    "power": "184 hp / 270 Nm",
+    "acceleration": "7.8s (0-100)",
+    "color": "Obsidian Black",
+    "interior": "Black Leather / Aluminium Trim",
+    "image": "/images/cars/c200_front.jpg",
+    "gallery": [
+      "/images/cars/c200_front.jpg",
+      "/images/cars/c200_rear.jpg"
+    ],
+    "badge": "Great Daily Driver",
+    "condition": "Accident Free · Ready in Yard",
+    "features": [
+      "Avantgarde Sport Front Grille with Center Star",
+      "17-inch Twin-Spoke Light Alloy Wheels",
+      "Thermatic Dual-Zone Automatic Climate Control",
+      "Bluetooth Hands-Free & Audio Streaming",
+      "Attention Assist & Tyre Pressure Loss Warning",
+      "Speedtronic Cruise Control",
+      "Rain Sensing Windscreen Wipers",
+      "Electric Folding Heated Door Mirrors"
+    ],
+    "description": "A practical C-Class in black, with an automatic gearbox and good fuel economy for city driving.",
+    "body": "Sedan",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "Great Daily Driver"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/c200_front.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": [
+        "/images/cars/c200_rear.jpg"
+      ]
+    },
+    "frames": []
+  },
+  {
+    "id": "e200-kompressor-classic",
+    "make": "Mercedes-Benz",
+    "class": "E-Class",
+    "model": "E200 Kompressor Classic W210",
+    "chassis": "W210 Facelift",
+    "year": 2002,
+    "price": 970000,
+    "mileage": 112000,
+    "type": "Sedan",
+    "transmission": "5-Speed Automatic",
+    "fuel": "Petrol",
+    "engine": "2.0L Supercharged M111 (163 hp)",
+    "drivetrain": "Rear-Wheel Drive",
+    "power": "163 hp / 230 Nm",
+    "acceleration": "9.6s (0-100)",
+    "color": "Brilliant Silver Metallic",
+    "interior": "Anthracite Cloth / Classic Zebrano Wood",
+    "image": "/images/cars/e200_classic.jpg",
+    "gallery": [
+      "/images/cars/e200_classic.jpg"
+    ],
+    "badge": "Under KSh 1M · Classic",
+    "condition": "Very Well Kept · Solid Engine",
+    "features": [
+      "Classic Twin Oval Headlight W210 Facelift Design",
+      "M111 Supercharged Kompressor Engine",
+      "5-Speed Electronic Automatic Transmission",
+      "Electric Windows & Heated Side Mirrors",
+      "Dual Airbags & ABS Braking System",
+      "Original Mercedes-Benz Radio/Cassette Deck",
+      "Deep Trunk Storage with Spare Wheel & Tool Kit"
+    ],
+    "description": "A classic E-Class with a comfortable ride. A good option if you want an older Mercedes-Benz.",
+    "body": "Sedan",
+    "vin": "",
+    "status": "In Stock",
+    "badges": [
+      "Under KSh 1M · Classic"
+    ],
+    "galleryByCategory": {
+      "front": [
+        "/images/cars/e200_classic.jpg"
+      ],
+      "side": [],
+      "rear": [],
+      "interior": [],
+      "other": []
+    },
+    "frames": []
+  }
+]

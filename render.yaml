@@ -1,11 +1,10 @@
 services:
   - type: web
-    name: tristar-motors
     runtime: node
+    name: tristar-motors
     plan: starter
-    rootDir: dealer-platform
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
+    buildCommand: npm ci --prefix dealer-platform && npm run build
+    startCommand: npm --prefix dealer-platform start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
