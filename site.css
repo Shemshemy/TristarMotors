@@ -627,14 +627,14 @@ h1 em, h2 em, h3 em {
    ========================================================================== */
 .search-container {
   width: var(--shell);
-  margin: -48px auto 0;
+  margin: 0 auto 48px;
   position: relative;
   z-index: 20;
 }
 
 .search-panel {
   display: grid;
-  grid-template-columns: 1.1fr 1fr 1.1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
@@ -2125,7 +2125,7 @@ body:has(#vehicle-detail) .floating-wa,
 
 @media (max-width: 768px) {
   :root {
-    --shell: calc(100% - 32px);
+    --shell: calc(100vw - 32px);
   }
 
   html {
@@ -2217,7 +2217,7 @@ body:has(#vehicle-detail) .floating-wa,
   }
 
   .search-container {
-    margin-top: -24px;
+    margin-bottom: 40px;
   }
 
   .search-panel {

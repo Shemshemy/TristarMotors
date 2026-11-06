@@ -89,44 +89,6 @@
       </div>
     </section>
 
-    <!-- Search Console -->
-    <div class="search-container">
-      <form class="search-panel" id="search-form" role="search" aria-label="Vehicle Search">
-        <div class="search-field">
-          <label for="make-filter">Make</label>
-          <select id="make-filter" aria-label="Filter by make">
-            <option value="all">All Mercedes-Benz</option>
-            <option value="Mercedes-Benz">Mercedes-Benz</option>
-          </select>
-        </div>
-        <div class="search-field">
-          <label for="type-filter">Body Style</label>
-          <select id="type-filter" aria-label="Filter by Body Style">
-            <option value="all">All body styles</option>
-            <option value="SUV">SUV</option>
-            <option value="Sedan">Sedan</option>
-            <option value="Coupe">Coupe</option>
-            <option value="Roadster">Roadster / Cabrio</option>
-            <option value="Wagon">Estate / Wagon</option>
-          </select>
-        </div>
-        <div class="search-field">
-          <label for="budget-filter">Budget</label>
-          <select id="budget-filter" aria-label="Filter by Budget">
-            <option value="all">Any budget</option>
-            <option value="10000000">Under KSh 10M</option>
-            <option value="15000000">Under KSh 15M</option>
-            <option value="20000000">Under KSh 20M</option>
-            <option value="20000000+">KSh 20M and above</option>
-          </select>
-        </div>
-        <button class="button button-gold search-submit" type="submit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>Find Vehicle</span>
-        </button>
-      </form>
-    </div>
-
     <!-- Browse by Body Style Showcase -->
     <section class="body-style-section section-shell" id="body-styles" aria-label="Browse by body style">
       <div class="section-head-split">
@@ -174,6 +136,26 @@
         </button>
       </div>
     </section>
+
+    <!-- Price Search -->
+    <div class="search-container">
+      <form class="search-panel" id="search-form" role="search" aria-label="Vehicle Search">
+        <div class="search-field">
+          <label for="budget-filter">Price</label>
+          <select id="budget-filter" aria-label="Filter by price">
+            <option value="all">Any price</option>
+            <option value="10000000">Under KSh 10M</option>
+            <option value="15000000">Under KSh 15M</option>
+            <option value="20000000">Under KSh 20M</option>
+            <option value="20000000+">KSh 20M and above</option>
+          </select>
+        </div>
+        <button class="button button-gold search-submit" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Find Vehicle</span>
+        </button>
+      </form>
+    </div>
 
     <!-- Inventory Section -->
     <section class="inventory-section section-shell" id="inventory">

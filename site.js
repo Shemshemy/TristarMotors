@@ -268,14 +268,10 @@ function setupHome() {
   const searchForm = document.querySelector("#search-form");
   searchForm?.addEventListener("submit", (e) => {
     e.preventDefault();
-    activeMake = document.querySelector("#make-filter")?.value || "all";
-    activeType = document.querySelector("#type-filter")?.value || "all";
     activeBudget = document.querySelector("#budget-filter")?.value || "all";
     activeFuel = document.querySelector("#fuel-filter")?.value || "all";
     savedOnly = false;
 
-    syncMakeChips(activeMake);
-    syncTypeTabs(activeType);
     renderVehicles();
 
     document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
