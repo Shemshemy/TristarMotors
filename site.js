@@ -250,7 +250,7 @@ function renderVehicles() {
             </div>
             <div class="car-card-actions">
               <a class="button button-whatsapp car-btn-wa" href="${waUrl}" target="_blank" rel="noopener" aria-label="Ask about ${escapeHTML(car.model)} on WhatsApp">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.48 15.02L2 22l5.14-1.35A9.9 9.9 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.05.8.82-2.97-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.06c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.68 2.56 4.06 3.58.56.24 1 .39 1.34.5.56.18 1.07.16 1.47.1.45-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
                 <span>WhatsApp</span>
               </a>
               <a class="car-link" href="/cars/${encodeURIComponent(car.id)}">
@@ -578,16 +578,12 @@ function setupVehiclePage() {
 
   // Header & Title
   setText("detail-title", `${car.year} Mercedes-Benz ${car.model}`);
-  setText("detail-subtitle", car.status === "In Stock" ? "Available to view in Upper Hill." : `This car is ${String(car.status).toLowerCase()}. Contact us to ask about it.`);
-  setText("detail-make-crumb", car.make);
   setText("detail-eyebrow-make", car.make);
-  setText("detail-model-crumb", car.model);
   setText("detail-type", car.type);
   setText("detail-badge", car.badge);
   setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
   setText("detail-condition", car.condition || "Duty Paid · Verified Provenance");
   setText("detail-price", money(car.price));
-  setText("detail-description", car.description);
 
   // Technical Specs
   setText("detail-chassis", car.chassis || "Mercedes-Benz");
@@ -703,7 +699,10 @@ function setupVehiclePage() {
   const relatedGrid = document.getElementById("related-grid");
   if (relatedGrid) {
     const related = vehicles.filter((v) => v.id !== car.id).slice(0, 3);
-    relatedGrid.innerHTML = related.map((r) => `
+    relatedGrid.innerHTML = related.map((r) => {
+      const relatedWaText = `Hello Tristar Motors, I am interested in the ${r.year} Mercedes-Benz ${r.model}. Is it available to view?`;
+      const relatedWaUrl = getWhatsAppUrl(relatedWaText);
+      return `
       <article class="car-card">
         <a class="car-image-wrap" href="/cars/${encodeURIComponent(r.id)}">
           <img class="car-image" src="${r.image}" alt="${r.model}" loading="lazy">
@@ -714,11 +713,18 @@ function setupVehiclePage() {
           <h4 class="car-title" style="font-size: 16px; margin: 4px 0 10px;"><a href="/cars/${encodeURIComponent(r.id)}">${r.model}</a></h4>
           <div class="car-bottom">
             <strong class="car-price" style="font-size: 18px;">${money(r.price)}</strong>
-            <a class="car-link" href="/cars/${encodeURIComponent(r.id)}">View ↗</a>
+            <div class="car-card-actions">
+              <a class="button button-whatsapp car-btn-wa" href="${relatedWaUrl}" target="_blank" rel="noopener" aria-label="Ask about ${escapeHTML(r.model)} on WhatsApp">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.48 15.02L2 22l5.14-1.35A9.9 9.9 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.05.8.82-2.97-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.06c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.68 2.56 4.06 3.58.56.24 1 .39 1.34.5.56.18 1.07.16 1.47.1.45-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
+                <span>WhatsApp</span>
+              </a>
+              <a class="car-link" href="/cars/${encodeURIComponent(r.id)}">Details ↗</a>
+            </div>
           </div>
         </div>
       </article>
-    `).join("");
+    `;
+    }).join("");
   }
 }
 

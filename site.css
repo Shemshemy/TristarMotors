@@ -1497,6 +1497,8 @@ h1 em, h2 em, h3 em {
    CONTACT / SHOWROOM BAND
    ========================================================================== */
 .contact-band {
+  --display: var(--header-font);
+  --serif: var(--header-font);
   margin-bottom: 80px;
   padding: 40px 48px;
   border: 1px solid var(--border);
@@ -1508,6 +1510,20 @@ h1 em, h2 em, h3 em {
   box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   gap: 24px;
+  font-family: var(--header-font);
+  font-style: normal;
+}
+
+.contact-band h2 em {
+  font-family: var(--header-font);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.contact-band-left > a.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .contact-band-left h2 {
@@ -1526,6 +1542,10 @@ h1 em, h2 em, h3 em {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.contact-band-actions .button svg {
+  flex: 0 0 18px;
 }
 
 /* ==========================================================================
@@ -1790,27 +1810,22 @@ body:has(#vehicle-detail) .floating-wa,
 /* ==========================================================================
    VEHICLE DETAIL PAGE (vehicle.html)
    ========================================================================== */
+body:has(#vehicle-detail) {
+  --sans: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --display: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --serif: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --header-font: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  font-family: var(--header-font);
+  font-style: normal;
+}
+
+body:has(#vehicle-detail) em {
+  font-style: normal;
+}
+
 .vehicle-page {
-  padding-top: 32px;
+  padding-top: 44px;
   padding-bottom: 96px;
-}
-
-.detail-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 24px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.detail-breadcrumb a:hover {
-  color: var(--ink);
-}
-
-.detail-breadcrumb span:last-child {
-  color: var(--ink);
-  font-weight: 600;
 }
 
 .detail-layout {
@@ -1818,6 +1833,14 @@ body:has(#vehicle-detail) .floating-wa,
   grid-template-columns: 1.35fr 1fr;
   gap: clamp(32px, 5vw, 64px);
   align-items: start;
+}
+
+.detail-support-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: start;
+  margin-top: 28px;
 }
 
 /* Gallery */
@@ -1968,18 +1991,63 @@ body:has(#vehicle-detail) .floating-wa,
   background: var(--green);
 }
 
-.detail-description {
-  font-size: 15px;
-  line-height: 1.8;
-  color: var(--ink-secondary);
-  margin-bottom: 28px;
-}
-
 .detail-cta {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 32px;
+}
+
+.detail-cta .button {
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 9px;
+  font-family: var(--header-font);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 7px 18px rgba(13, 15, 18, 0.12);
+}
+
+.detail-cta .button svg {
+  flex: 0 0 18px;
+}
+
+.detail-cta .button-whatsapp {
+  border-color: #176b45;
+  background: linear-gradient(135deg, #1c8053, #125c3c);
+  box-shadow: 0 8px 20px rgba(18, 75, 49, 0.24);
+}
+
+.detail-cta .button-whatsapp:hover {
+  background: linear-gradient(135deg, #176b45, #0d4b31);
+  box-shadow: 0 12px 24px rgba(18, 75, 49, 0.3);
+}
+
+.detail-cta .button-dark {
+  background: linear-gradient(145deg, #272a30, #0d0f12);
+  box-shadow: 0 8px 20px rgba(13, 15, 18, 0.2);
+}
+
+.detail-cta .button-dark:hover {
+  box-shadow: 0 12px 24px rgba(13, 15, 18, 0.26);
+}
+
+.detail-cta .button-outline {
+  background: #fff;
+  border-color: #d8d8d2;
+  box-shadow: 0 5px 15px rgba(13, 15, 18, 0.07);
+}
+
+.detail-cta .button-outline:hover {
+  border-color: var(--gold-dark);
+  background: #fffdf9;
+  box-shadow: 0 9px 20px rgba(13, 15, 18, 0.12);
+}
+
+.detail-cta .button:focus-visible {
+  outline: 3px solid rgba(197, 160, 89, 0.45);
+  outline-offset: 3px;
 }
 
 /* Spec Block */
@@ -1989,6 +2057,8 @@ body:has(#vehicle-detail) .floating-wa,
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
+  font-family: var(--header-font);
+  font-style: normal;
 }
 
 .spec-heading {
@@ -2043,6 +2113,7 @@ body:has(#vehicle-detail) .floating-wa,
 }
 
 .detail-features-block {
+  margin-top: 0;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -2059,7 +2130,7 @@ body:has(#vehicle-detail) .floating-wa,
 
 .detail-features {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px 20px;
   padding: 0;
   list-style: none;
@@ -2407,6 +2478,13 @@ body:has(#vehicle-detail) .floating-wa,
   }
 }
 
+@media (min-width: 769px) and (max-width: 1080px) {
+  .detail-support-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
 /* ==========================================================================
    MOTION & ACCESSIBILITY
    ========================================================================== */
@@ -2424,10 +2502,6 @@ body:has(#vehicle-detail) .floating-wa,
 @media (max-width: 768px) {
   .detail-image-wrap {
     touch-action: pan-y;
-  }
-
-  .detail-breadcrumb {
-    display: none;
   }
 
   .mobile-detail-back {
@@ -2469,6 +2543,12 @@ body:has(#vehicle-detail) .floating-wa,
     gap: 14px;
   }
 
+  .detail-support-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+
   .detail-summary {
     display: contents;
   }
@@ -2487,12 +2567,24 @@ body:has(#vehicle-detail) .floating-wa,
     grid-area: info;
   }
 
+  .detail-cta .button {
+    flex: 1 1 auto;
+  }
+
   .vehicle-page .spec-block {
     margin-top: 4px;
     padding: 17px 16px 12px;
     border: 1px solid #e8e5dd;
     border-radius: 17px;
     background: #fff;
+    box-shadow: 0 8px 24px rgba(29, 31, 28, .045);
+  }
+
+  .detail-features-block {
+    margin-top: 0;
+    padding: 17px 16px 12px;
+    border-color: #e8e5dd;
+    border-radius: 17px;
     box-shadow: 0 8px 24px rgba(29, 31, 28, .045);
   }
 

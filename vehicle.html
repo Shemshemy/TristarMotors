@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#0f1114">
   <meta name="description" content="Explore vehicle specifications, provenance, and pricing at Tristar Motors Nairobi.">
   <title>Vehicle Details | Tristar Motors Nairobi</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="site.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
   <!-- Scroll Progress -->
@@ -16,8 +16,8 @@
 
   <!-- Site Header -->
   <header class="site-header" id="top">
-    <a class="brand" href="index.html" aria-label="Tristar Motors Home">
-      <img src="Logos/TristarMotors.png" alt="Tristar Motors" width="170" height="61">
+    <a class="brand" href="/" aria-label="Tristar Motors Home">
+      <img src="/Logos/TristarMotors.png" alt="Tristar Motors" width="170" height="61">
     </a>
 
     <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
@@ -26,19 +26,19 @@
     </button>
 
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
-      <a href="index.html#inventory">The Collection</a>
-      <a href="index.html#body-styles">Body Styles</a>
-      <a href="index.html#experience">The Experience</a>
-      <a href="index.html#sell">Sell Your Car</a>
-      <a href="index.html#contact">Showroom</a>
+      <a href="/#inventory">The Collection</a>
+      <a href="/#body-styles">Body Styles</a>
+      <a href="/#experience">The Experience</a>
+      <a href="/#sell">Sell Your Car</a>
+      <a href="/#contact">Showroom</a>
     </nav>
 
     <div class="header-actions">
-      <a class="icon-button saved-link" href="index.html?saved=1#inventory" aria-label="Show saved vehicles">
+      <a class="icon-button saved-link" href="/?saved=1#inventory" aria-label="Show saved vehicles">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg>
         <span class="saved-count">0</span>
       </a>
-      <a class="button button-dark button-small button-header-cta" href="index.html#contact">
+      <a class="button button-dark button-small button-header-cta" href="/#contact">
         <span>Visit Showroom</span>
         <span aria-hidden="true">↗</span>
       </a>
@@ -47,22 +47,11 @@
 
   <!-- Vehicle Main Detail Section -->
   <main id="vehicle-detail" class="vehicle-page section-shell">
-    <!-- Breadcrumbs -->
-    <nav class="detail-breadcrumb" aria-label="Breadcrumb">
-      <a href="index.html">Home</a>
-      <span>/</span>
-      <a href="index.html#inventory">Collection</a>
-      <span>/</span>
-      <span id="detail-make-crumb">Mercedes-Benz</span>
-      <span>/</span>
-      <span id="detail-model-crumb">Model</span>
-    </nav>
-
     <section class="detail-layout">
       <!-- Left Column: Gallery -->
       <div class="detail-gallery">
         <div class="detail-image-wrap">
-          <a class="mobile-detail-back" href="index.html#inventory" aria-label="Back to the collection">
+          <a class="mobile-detail-back" href="/#inventory" aria-label="Back to the collection">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
             <span>Back</span>
           </a>
@@ -74,6 +63,52 @@
         </div>
         <!-- Thumbnails -->
         <div class="detail-thumbnails" id="detail-thumbs" aria-label="Photo gallery thumbnails"></div>
+
+      </div>
+
+      <!-- Right Column: Summary & Specs -->
+      <div class="detail-summary">
+        <div class="detail-heading-group">
+          <p class="eyebrow">
+            <span class="eyebrow-line"></span> <span id="detail-eyebrow-make">SELECTED</span> MOTORCAR
+          </p>
+          <h1 id="detail-title">Vehicle Model</h1>
+        </div>
+
+        <div class="detail-main-info">
+          <!-- Pricing & Availability -->
+          <div class="detail-price-box">
+          <div class="detail-price-tag">Cash Purchase Price</div>
+          <div class="detail-price" id="detail-price">KSh 0</div>
+          <div class="detail-status">
+            <span class="status-dot"></span>
+            <span id="detail-status">Available for viewing</span>
+            <span aria-hidden="true">·</span>
+            <a href="https://www.google.com/maps/search/?api=1&amp;query=La+Colline+Garden%2C+Masaba+Road%2C+Upper+Hill%2C+Nairobi%2C+Kenya" target="_blank" rel="noopener">La Colline Garden, Masaba Road</a>
+          </div>
+        </div>
+
+        <!-- CTAs -->
+        <div class="detail-cta">
+          <a class="button button-whatsapp" id="detail-wa" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.48 15.02L2 22l5.14-1.35A9.9 9.9 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.05.8.82-2.97-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.06c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.68 2.56 4.06 3.58.56.24 1 .39 1.34.5.56.18 1.07.16 1.47.1.45-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
+            <span>Message us</span>
+          </a>
+          <a class="button button-dark" id="detail-call" href="tel:+254734490475">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L9 10.71a16 16 0 0 0 4.29 4.29l1.25-1.25a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92Z"/></svg>
+            <span>Call us</span>
+          </a>
+          <a class="button button-outline" id="detail-email" href="mailto:sales@tristarmotors.co.ke">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <span>Email Inquiry</span>
+          </a>
+        </div>
+
+      </div>
+      </div>
+    </section>
+
+    <section class="detail-support-grid" aria-label="Vehicle details">
         <div class="spec-block">
           <div class="spec-heading">
             <h3>Technical Specifications</h3>
@@ -130,52 +165,11 @@
             </div>
           </div>
         </div>
+
         <section class="detail-features-block">
           <h3>Selected Equipment</h3>
           <ul class="detail-features" id="detail-features"></ul>
         </section>
-      </div>
-
-      <!-- Right Column: Summary & Specs -->
-      <div class="detail-summary">
-        <div class="detail-heading-group">
-          <p class="eyebrow">
-            <span class="eyebrow-line"></span> <span id="detail-eyebrow-make">SELECTED</span> MOTORCAR
-          </p>
-          <h1 id="detail-title">Vehicle Model</h1>
-          <p class="detail-subtitle" id="detail-subtitle">Available to view in Upper Hill.</p>
-        </div>
-
-        <div class="detail-main-info">
-          <!-- Pricing & Availability -->
-          <div class="detail-price-box">
-          <div class="detail-price-tag">Cash Purchase Price</div>
-          <div class="detail-price" id="detail-price">KSh 0</div>
-          <div class="detail-status">
-            <span class="status-dot"></span>
-            <span id="detail-status">Available for viewing</span>
-            <span aria-hidden="true">·</span>
-            <a href="https://www.google.com/maps/search/?api=1&amp;query=La+Colline+Garden%2C+Masaba+Road%2C+Upper+Hill%2C+Nairobi%2C+Kenya" target="_blank" rel="noopener">La Colline Garden, Masaba Road</a>
-          </div>
-        </div>
-
-        <p class="detail-description" id="detail-description"></p>
-
-        <!-- CTAs -->
-        <div class="detail-cta">
-          <a class="button button-whatsapp" id="detail-wa" href="#" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
-            <span>Message us</span>
-          </a>
-          <a class="button button-dark" id="detail-call" href="tel:+254734490475">
-            <span>Call us</span>
-          </a>
-          <a class="button button-outline" id="detail-email" href="mailto:sales@tristarmotors.co.ke">
-            <span>Email Inquiry</span>
-          </a>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- Bottom Contact CTA Banner -->
@@ -188,7 +182,7 @@
       <div class="contact-band-actions">
         <a class="button button-whatsapp" href="https://wa.me/254734490475?text=Hello%20Tristar%20Motors,%20I%20would%20like%20to%20schedule%20a%20private%20viewing" target="_blank" rel="noopener">
           <span>Schedule Private Viewing</span>
-          <span aria-hidden="true">↗</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.48 15.02L2 22l5.14-1.35A9.9 9.9 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.05.8.82-2.97-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.06c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.68 2.56 4.06 3.58.56.24 1 .39 1.34.5.56.18 1.07.16 1.47.1.45-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
         </a>
       </div>
     </section>
@@ -211,7 +205,7 @@
     <div class="footer-bottom">
       <span>© 2026 Tristar Motors Limited. All rights reserved.</span>
       <span>Based in Nairobi.</span>
-      <a href="index.html">Back to Collection ↑</a>
+      <a href="/">Back to Collection ↑</a>
     </div>
   </footer>
 
@@ -228,6 +222,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="site.js"></script>
+  <script src="/site.js"></script>
 </body>
 </html>
