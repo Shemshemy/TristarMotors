@@ -103,6 +103,28 @@ let savedOnly = false;
 const INVENTORY_PAGE_SIZE = 6;
 let currentPage = 1;
 let toastTimer = null;
+const inventoryScrollKey = "tristar-inventory-scroll-y";
+
+function restoreInventoryState() {
+  const params = new URLSearchParams(location.search);
+  activeType = params.get("type") || "all";
+  activeBudget = params.get("price") || "all";
+  activeSort = params.get("sort") || "featured";
+  currentPage = Math.max(1, Number(params.get("page")) || 1);
+  savedOnly = params.get("saved") === "1";
+}
+
+function syncInventoryUrl() {
+  const url = new URL(location.href);
+  const values = { type: activeType, price: activeBudget, sort: activeSort, page: currentPage };
+  Object.entries(values).forEach(([key, value]) => {
+    if (value && value !== "all" && value !== "featured" && !(key === "page" && value === 1)) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+  });
+  if (savedOnly) url.searchParams.set("saved", "1");
+  else url.searchParams.delete("saved");
+  history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
 
 // Toast Alert
 function showToast(message) {
@@ -266,6 +288,7 @@ function renderVehicles() {
   renderInventoryPagination(totalPages);
 
   updateDynamicCounts();
+  syncInventoryUrl();
 }
 
 function renderInventoryPagination(totalPages) {
@@ -322,11 +345,27 @@ function setupHome() {
   const grid = document.querySelector("#car-grid");
   if (!grid) return;
 
-  savedOnly = new URLSearchParams(location.search).get("saved") === "1";
+  restoreInventoryState();
+  const typeFilter = document.querySelector("#type-filter");
+  const budgetFilter = document.querySelector("#budget-filter");
+  const sortSelect = document.querySelector("#sort-select");
+  if (typeFilter) typeFilter.value = activeType;
+  if (budgetFilter) budgetFilter.value = activeBudget;
+  if (sortSelect) sortSelect.value = activeSort;
+  syncTypeTabs(activeType);
   renderVehicles();
   updateSavedCount();
 
+  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
+  if (navigationType === "back_forward") {
+    const savedScrollY = Number(sessionStorage.getItem(inventoryScrollKey));
+    if (savedScrollY > 0) requestAnimationFrame(() => window.scrollTo(0, savedScrollY));
+  }
+
   // Wishlist clicks
+  grid.addEventListener("click", (event) => {
+    if (event.target.closest('a[href^="/cars/"]')) sessionStorage.setItem(inventoryScrollKey, String(window.scrollY));
+  });
   grid.addEventListener("click", (e) => {
     const saveBtn = e.target.closest("[data-save]");
     if (saveBtn) {
@@ -349,13 +388,13 @@ function setupHome() {
   searchForm?.addEventListener("submit", (e) => {
     e.preventDefault();
     activeBudget = document.querySelector("#budget-filter")?.value || "all";
+    activeType = document.querySelector("#type-filter")?.value || "all";
     activeFuel = document.querySelector("#fuel-filter")?.value || "all";
     savedOnly = false;
     currentPage = 1;
 
+    syncTypeTabs(activeType);
     renderVehicles();
-
-    document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
   });
 
   // Marque Chips
@@ -390,6 +429,18 @@ function setupHome() {
   document.querySelectorAll(".filter-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       activeType = tab.dataset.type;
+      const typeSelect = document.querySelector("#type-filter");
+      if (typeSelect) typeSelect.value = activeType;
+      savedOnly = false;
+      currentPage = 1;
+      syncTypeTabs(activeType);
+      renderVehicles();
+    });
+  });
+
+  document.querySelectorAll(".quick-type-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      activeType = activeType === chip.dataset.type ? "all" : chip.dataset.type;
       const typeSelect = document.querySelector("#type-filter");
       if (typeSelect) typeSelect.value = activeType;
       savedOnly = false;
@@ -464,6 +515,11 @@ function syncTypeTabs(type) {
   });
   document.querySelectorAll(".body-type-card").forEach((card) => {
     card.classList.toggle("active", card.dataset.type === type);
+  });
+  document.querySelectorAll(".quick-type-chip").forEach((chip) => {
+    const active = chip.dataset.type === type;
+    chip.classList.toggle("active", active);
+    chip.setAttribute("aria-pressed", String(active));
   });
 }
 
@@ -598,6 +654,43 @@ function setupVehiclePage() {
   setText("detail-interior", car.interior || "Luxury Leather");
   setText("sticky-price", money(car.price));
 
+  const stickyBar = document.querySelector(".mobile-sticky-bar");
+  const priceCard = document.querySelector(".detail-price-box");
+  const footer = document.querySelector(".site-footer");
+  let footerInView = false;
+  const setStickyVisible = (visible) => {
+    if (!stickyBar) return;
+    stickyBar.classList.toggle("is-visible", visible);
+    stickyBar.setAttribute("aria-hidden", String(!visible));
+    stickyBar.inert = !visible;
+    document.body.classList.toggle("vehicle-sticky-visible", visible);
+  };
+  const updateStickyVisibility = () => {
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    if (!("IntersectionObserver" in window) && footer) {
+      footerInView = footer.getBoundingClientRect().top < window.innerHeight;
+    }
+    setStickyVisible(Boolean(mobile && !footerInView && priceCard && priceCard.getBoundingClientRect().bottom < 0));
+  };
+  if (stickyBar && priceCard) {
+    if ("IntersectionObserver" in window) {
+      const priceObserver = new IntersectionObserver(updateStickyVisibility);
+      priceObserver.observe(priceCard);
+      if (footer) {
+        const footerObserver = new IntersectionObserver(([entry]) => {
+          footerInView = entry.isIntersecting;
+          updateStickyVisibility();
+        });
+        footerObserver.observe(footer);
+      }
+      window.addEventListener("resize", updateStickyVisibility, { passive: true });
+    } else {
+      window.addEventListener("scroll", updateStickyVisibility, { passive: true });
+      window.addEventListener("resize", updateStickyVisibility, { passive: true });
+      updateStickyVisibility();
+    }
+  }
+
   // Gallery
   const mainImage = document.getElementById("detail-image");
   const galleryImages = car.gallery?.length ? car.gallery : [car.image];
@@ -673,6 +766,9 @@ function setupVehiclePage() {
 
   const callBtn = document.getElementById("detail-call");
   if (callBtn) callBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
+
+  const stickyCallBtn = document.getElementById("sticky-call");
+  if (stickyCallBtn) stickyCallBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
 
   const emailBtn = document.getElementById("detail-email");
   if (emailBtn) {

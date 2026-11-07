@@ -89,6 +89,87 @@
       </div>
     </section>
 
+
+
+    <!-- Inventory Section -->
+    <section class="inventory-section section-shell" id="inventory">
+      <div class="section-head-split">
+        <div>
+          <span class="eyebrow">The Collection</span>
+          <h2>Cars worth <em>looking twice.</em></h2>
+        </div>
+        <div id="saved-indicator" class="saved-filter-badge" hidden></div>
+      </div>
+
+      <!-- Inventory Toolbar -->
+      <div class="inventory-toolbar">
+        <div class="inventory-left">
+          <div class="result-count">
+            <strong id="result-count">08</strong> cars for sale
+          </div>
+        </div>
+        <div class="quick-type-filters" role="group" aria-label="Quick filter by body style">
+          <button class="quick-type-chip" data-type="SUV" type="button" aria-pressed="false"><img src="images/body-types/suv.webp" alt="" aria-hidden="true">SUV <span class="quick-type-count" data-type-count="SUV">0</span></button>
+          <button class="quick-type-chip" data-type="Sedan" type="button" aria-pressed="false"><img src="images/body-types/sedan.webp" alt="" aria-hidden="true">Sedan <span class="quick-type-count" data-type-count="Sedan">0</span></button>
+          <button class="quick-type-chip" data-type="Coupe" type="button" aria-pressed="false"><img src="images/body-types/coupe.webp" alt="" aria-hidden="true">Coupe <span class="quick-type-count" data-type-count="Coupe">0</span></button>
+          <button class="quick-type-chip" data-type="Wagon" type="button" aria-pressed="false"><img src="images/body-types/wagon.webp" alt="" aria-hidden="true">Wagon <span class="quick-type-count" data-type-count="Wagon">0</span></button>
+        </div>
+        <div class="inventory-right">
+          <div class="sort-wrap">
+            <label for="sort-select">Sort:</label>
+            <select class="sort-select" id="sort-select" aria-label="Sort vehicles">
+              <option value="featured">Featured first</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="year-desc">Newest Year</option>
+              <option value="mileage-asc">Lowest Mileage</option>
+            </select>
+          </div>
+          <form class="inventory-filter-form" id="search-form" role="search" aria-label="Filter vehicles">
+            <label class="visually-hidden" for="type-filter">Body style</label>
+            <select id="type-filter" aria-label="Filter by body style">
+              <option value="all">All body styles</option>
+              <option value="SUV">SUV</option>
+              <option value="Sedan">Sedan</option>
+              <option value="Coupe">Coupe</option>
+              <option value="Roadster">Roadster</option>
+              <option value="Wagon">Wagon</option>
+            </select>
+            <label class="visually-hidden" for="budget-filter">Price range</label>
+            <select id="budget-filter" aria-label="Filter by price">
+              <option value="all">Any price</option>
+              <option value="10000000">Under KSh 10M</option>
+              <option value="15000000">Under KSh 15M</option>
+              <option value="20000000">Under KSh 20M</option>
+              <option value="20000000+">KSh 20M and above</option>
+            </select>
+            <button class="button button-dark search-submit" type="submit">Apply</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Car Grid -->
+      <div class="car-grid" id="car-grid" aria-live="polite"></div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state" hidden>
+        <h3>No vehicles match those criteria</h3>
+        <p>Try broadening your filters, choosing a different make or budget, or ask our procurement team to source your vehicle.</p>
+        <button class="button button-dark" id="clear-filters" type="button">Reset all filters</button>
+      </div>
+
+      <nav class="inventory-pagination" id="inventory-pagination" aria-label="Vehicle listing pages" hidden></nav>
+
+      <!-- Collection Bottom Banner -->
+      <div class="collection-more">
+        <span>New cars arrive often. Looking for something else?</span>
+        <a class="button button-outline" href="https://wa.me/254734490475?text=Hello%20Tristar%20Motors,%20I%20am%20looking%20for%20a%20specific%20vehicle%20not%20listed%20on%20your%20site" target="_blank" rel="noopener">
+          <span>Request Bespoke Vehicle Procurement</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+
     <!-- Browse by Body Style Showcase -->
     <section class="body-style-section section-shell" id="body-styles" aria-label="Browse by body style">
       <div class="section-head-split">
@@ -134,87 +215,6 @@
           <span class="body-type-name">Wagon</span>
           <span class="body-type-count"><span data-type-count="Wagon">1</span> available</span>
         </button>
-      </div>
-    </section>
-
-    <!-- Price Search -->
-    <div class="search-container">
-      <form class="search-panel" id="search-form" role="search" aria-label="Vehicle Search">
-        <div class="search-field">
-          <label for="budget-filter">Price</label>
-          <select id="budget-filter" aria-label="Filter by price">
-            <option value="all">Any price</option>
-            <option value="10000000">Under KSh 10M</option>
-            <option value="15000000">Under KSh 15M</option>
-            <option value="20000000">Under KSh 20M</option>
-            <option value="20000000+">KSh 20M and above</option>
-          </select>
-        </div>
-        <button class="button button-gold search-submit" type="submit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>Find Vehicle</span>
-        </button>
-      </form>
-    </div>
-
-    <!-- Inventory Section -->
-    <section class="inventory-section section-shell" id="inventory">
-      <div class="section-head-split">
-        <div>
-          <span class="eyebrow">The Collection</span>
-          <h2>Cars worth <em>looking twice.</em></h2>
-        </div>
-        <div id="saved-indicator" class="saved-filter-badge" hidden></div>
-      </div>
-
-      <!-- Inventory Toolbar -->
-      <div class="inventory-toolbar">
-        <div class="inventory-left">
-          <div class="result-count">
-            <strong id="result-count">08</strong> cars for sale
-          </div>
-        </div>
-        <div class="inventory-right">
-          <div class="sort-wrap">
-            <label for="sort-select">Sort:</label>
-            <select class="sort-select" id="sort-select" aria-label="Sort vehicles">
-              <option value="featured">Featured first</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="year-desc">Newest Year</option>
-              <option value="mileage-asc">Lowest Mileage</option>
-            </select>
-          </div>
-          <div class="filter-tabs" role="group" aria-label="Filter by body style">
-            <button class="filter-tab active" data-type="all" type="button">All (<span data-type-count="all">8</span>)</button>
-            <button class="filter-tab" data-type="SUV" type="button">SUVs (<span data-type-count="SUV">3</span>)</button>
-            <button class="filter-tab" data-type="Sedan" type="button">Sedans (<span data-type-count="Sedan">1</span>)</button>
-            <button class="filter-tab" data-type="Coupe" type="button">Coupes (<span data-type-count="Coupe">2</span>)</button>
-            <button class="filter-tab" data-type="Roadster" type="button">Roadsters (<span data-type-count="Roadster">1</span>)</button>
-            <button class="filter-tab" data-type="Wagon" type="button">Wagons (<span data-type-count="Wagon">1</span>)</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Car Grid -->
-      <div class="car-grid" id="car-grid" aria-live="polite"></div>
-
-      <!-- Empty State -->
-      <div class="empty-state" id="empty-state" hidden>
-        <h3>No vehicles match those criteria</h3>
-        <p>Try broadening your filters, choosing a different make or budget, or ask our procurement team to source your vehicle.</p>
-        <button class="button button-dark" id="clear-filters" type="button">Reset all filters</button>
-      </div>
-
-      <nav class="inventory-pagination" id="inventory-pagination" aria-label="Vehicle listing pages" hidden></nav>
-
-      <!-- Collection Bottom Banner -->
-      <div class="collection-more">
-        <span>New cars arrive often. Looking for something else?</span>
-        <a class="button button-outline" href="https://wa.me/254734490475?text=Hello%20Tristar%20Motors,%20I%20am%20looking%20for%20a%20specific%20vehicle%20not%20listed%20on%20your%20site" target="_blank" rel="noopener">
-          <span>Request Bespoke Vehicle Procurement</span>
-          <span aria-hidden="true">↗</span>
-        </a>
       </div>
     </section>
 
