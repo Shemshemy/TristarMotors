@@ -30,7 +30,7 @@
     <!-- Main Navigation -->
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
       <a class="active" href="#inventory">The Collection</a>
-      <a href="#body-styles">Body Styles</a>
+      <a href="#body-style-filters">Body Styles</a>
       <a href="#experience">The Experience</a>
       <a href="#sell">Sell Your Car</a>
       <a href="#contact">Showroom</a>
@@ -67,7 +67,7 @@
           <span>Browse cars</span>
             <span aria-hidden="true">→</span>
           </a>
-          <a class="button button-outline" style="border-color: rgba(255,255,255,0.35); color: #ffffff;" href="#body-styles">
+          <a class="button button-outline" style="border-color: rgba(255,255,255,0.35); color: #ffffff;" href="#body-style-filters">
             <span>Browse by style</span>
             <span aria-hidden="true">↓</span>
           </a>
@@ -108,7 +108,7 @@
             <strong id="result-count">08</strong> cars for sale
           </div>
         </div>
-        <div class="quick-type-filters" role="group" aria-label="Quick filter by body style">
+        <div class="quick-type-filters" id="body-style-filters" role="group" aria-label="Quick filter by body style">
           <button class="quick-type-chip" data-type="SUV" type="button" aria-pressed="false"><img src="images/body-types/suv.webp" alt="" aria-hidden="true">SUV <span class="quick-type-count" data-type-count="SUV">0</span></button>
           <button class="quick-type-chip" data-type="Sedan" type="button" aria-pressed="false"><img src="images/body-types/sedan.webp" alt="" aria-hidden="true">Sedan <span class="quick-type-count" data-type-count="Sedan">0</span></button>
           <button class="quick-type-chip" data-type="Coupe" type="button" aria-pressed="false"><img src="images/body-types/coupe.webp" alt="" aria-hidden="true">Coupe <span class="quick-type-count" data-type-count="Coupe">0</span></button>
@@ -128,14 +128,17 @@
           <div class="inventory-filter-form" role="group" aria-label="Filter vehicles">
             <div class="price-filter-bar" aria-label="Price range filter">
               <div class="price-range-values">
-                <span><small>MIN</small><strong id="min-price-label">KSh 0</strong></span>
-                <span><small>MAX</small><strong id="max-price-label">KSh 20M</strong></span>
+                <strong id="min-price-label">KSh 0</strong>
+                <strong id="max-price-label">KSh 20M</strong>
               </div>
-              <div class="price-range-slider" id="price-range-slider">
-                <div class="price-range-track"></div>
-                <div class="price-range-fill" id="price-range-fill"></div>
-                <input id="min-price-filter" type="range" min="0" max="20000000" step="250000" value="0" aria-label="Minimum price">
-                <input id="max-price-filter" type="range" min="0" max="20000000" step="250000" value="20000000" aria-label="Maximum price">
+              <div class="price-range-control">
+                <span class="price-range-label">PRICE</span>
+                <div class="price-range-slider" id="price-range-slider">
+                  <div class="price-range-track"></div>
+                  <div class="price-range-fill" id="price-range-fill"></div>
+                  <input id="min-price-filter" type="range" min="0" max="20000000" step="250000" value="0" aria-label="Minimum price">
+                  <input id="max-price-filter" type="range" min="0" max="20000000" step="250000" value="20000000" aria-label="Maximum price">
+                </div>
               </div>
             </div>
           </div>
@@ -161,54 +164,6 @@
           <span>Request Bespoke Vehicle Procurement</span>
           <span aria-hidden="true">↗</span>
         </a>
-      </div>
-    </section>
-
-    <!-- Browse by Body Style Showcase -->
-    <section class="body-style-section section-shell" id="body-styles" aria-label="Browse by body style">
-      <div class="section-head-split">
-        <div>
-          <span class="eyebrow">Browse by style</span>
-          <h2>Choose a <em>body style.</em></h2>
-        </div>
-        <span style="font-size: 13.5px; color: var(--muted);">Select a shape to filter the collection</span>
-      </div>
-      <div class="body-type-grid">
-        <button class="body-type-card" data-type="SUV" type="button" aria-label="Browse SUVs">
-          <div class="body-type-thumb">
-            <img src="images/body-types/suv.webp" alt="SUV Silhouette" width="160" height="80" loading="lazy">
-          </div>
-          <span class="body-type-name">SUV</span>
-          <span class="body-type-count"><span data-type-count="SUV">3</span> available</span>
-        </button>
-        <button class="body-type-card" data-type="Sedan" type="button" aria-label="Browse Sedans">
-          <div class="body-type-thumb">
-            <img src="images/body-types/sedan.webp" alt="Sedan Silhouette" width="160" height="80" loading="lazy">
-          </div>
-          <span class="body-type-name">Sedan</span>
-          <span class="body-type-count"><span data-type-count="Sedan">1</span> available</span>
-        </button>
-        <button class="body-type-card" data-type="Coupe" type="button" aria-label="Browse Coupes">
-          <div class="body-type-thumb">
-            <img src="images/body-types/coupe.webp" alt="Coupe Silhouette" width="160" height="80" loading="lazy">
-          </div>
-          <span class="body-type-name">Coupe</span>
-          <span class="body-type-count"><span data-type-count="Coupe">2</span> available</span>
-        </button>
-        <button class="body-type-card" data-type="Roadster" type="button" aria-label="Browse Roadsters">
-          <div class="body-type-thumb">
-            <img src="images/body-types/roadster.webp" alt="Roadster Silhouette" width="160" height="80" loading="lazy">
-          </div>
-          <span class="body-type-name">Roadster</span>
-          <span class="body-type-count"><span data-type-count="Roadster">1</span> available</span>
-        </button>
-        <button class="body-type-card" data-type="Wagon" type="button" aria-label="Browse Wagons">
-          <div class="body-type-thumb">
-            <img src="images/body-types/wagon.webp" alt="Wagon Silhouette" width="160" height="80" loading="lazy">
-          </div>
-          <span class="body-type-name">Wagon</span>
-          <span class="body-type-count"><span data-type-count="Wagon">1</span> available</span>
-        </button>
       </div>
     </section>
 
@@ -315,8 +270,8 @@
       <div class="footer-column">
         <span class="footer-label">The Collection</span>
         <a href="#inventory">All Vehicles</a>
-        <a href="#body-styles">SUVs & Sedans</a>
-        <a href="#body-styles">Coupes & Roadsters</a>
+        <a href="#body-style-filters">SUVs & Sedans</a>
+        <a href="#body-style-filters">Coupes & Roadsters</a>
         <a href="#experience">The Tristar Experience</a>
       </div>
       <div class="footer-column">

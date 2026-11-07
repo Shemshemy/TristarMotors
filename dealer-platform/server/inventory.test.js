@@ -53,14 +53,12 @@ test("serves seeded vehicles and persists a sold status across database reopen",
   const response = await fetch(`${baseUrl}/api/cars`);
   assert.equal(response.status, 200);
   const cars = await response.json();
-  assert.ok(cars.some((car) => car.id === "bmw-520i" && car.status === "In Stock"));
+  assert.ok(cars.some((car) => car.id === "c180-avantgarde-2014" && car.status === "In Stock"));
   assert.ok(cars.every((car) => car.fuel !== "Gasoline"));
-  assert.equal(cars.find((car) => car.id === "bmw-520i").fuel, "Petrol");
-  assert.equal(cars.find((car) => car.id === "bmw-520i").price, 5_400_000);
-  assert.equal(cars.find((car) => car.id === "ford-f150").price, null);
-  assert.equal(cars.find((car) => car.id === "ford-f150").status, "Pending");
+  assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").fuel, "Petrol");
+  assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").price, 2_380_000);
 
-  const statusResponse = await adminFetch("/api/cars/bmw-520i/status", {
+  const statusResponse = await adminFetch("/api/cars/c180-avantgarde-2014/status", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status: "Sold" }),
@@ -69,7 +67,7 @@ test("serves seeded vehicles and persists a sold status across database reopen",
   assert.equal((await statusResponse.json()).status, "Sold");
 
   const reopened = new InventoryDatabase(join(directory, "inventory.sqlite"));
-  assert.equal(reopened.get("bmw-520i").status, "Sold");
+  assert.equal(reopened.get("c180-avantgarde-2014").status, "Sold");
   reopened.close();
 });
 
@@ -144,8 +142,8 @@ test("restores demonstration inventory on an explicit reset", async () => {
   const reset = await adminFetch("/api/reset", { method: "POST" });
   assert.equal(reset.status, 200);
   const cars = await reset.json();
-  assert.equal(cars.length, 9);
-  assert.equal(cars.find((car) => car.id === "bmw-520i").status, "In Stock");
+  assert.equal(cars.length, 8);
+  assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").status, "In Stock");
 });
 
 test("does not reseed inventory after the dealer deletes every vehicle", async () => {
@@ -258,7 +256,7 @@ test("keeps administrator writes disabled until an environment password is confi
   }
 });
 
-test("migrates legacy sample prices without changing other vehicle data", () => {
+test("normalizes legacy inventory fields without changing vehicle details", () => {
   const filename = join(directory, "legacy.sqlite");
   const legacyDb = new DatabaseSync(filename);
   legacyDb.exec(`
@@ -270,19 +268,17 @@ test("migrates legacy sample prices without changing other vehicle data", () => 
     CREATE TABLE app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   `);
   const insert = legacyDb.prepare("INSERT INTO inventory (id, data_json, status) VALUES (?, ?, ?)");
-  const legacyBmw = { id: "bmw-520i", year: 2022, make: "BMW", model: "520i M Sport", price: 45990, mileage: 32140, fuel: "Gasoline", status: "In Stock" };
-  const legacyFord = { id: "ford-f150", year: 2023, make: "Ford", model: "F-150 Lariat", price: 54800, mileage: 18700, fuel: "Gasoline", status: "In Stock" };
-  insert.run(legacyBmw.id, JSON.stringify(legacyBmw), legacyBmw.status);
-  insert.run(legacyFord.id, JSON.stringify(legacyFord), legacyFord.status);
+  const legacyCar = { id: "c180-avantgarde-2014", year: 2014, make: "Mercedes-Benz", model: "C180 BlueEFFICIENCY Avantgarde", price: 2_380_000, mileage: 32140, fuel: "Gasoline", type: "Sedan", status: "In Stock" };
+  insert.run(legacyCar.id, JSON.stringify(legacyCar), legacyCar.status);
   legacyDb.prepare("INSERT INTO app_meta (key, value) VALUES ('seeded', 'true')").run();
   legacyDb.close();
 
   const migrated = new InventoryDatabase(filename);
-  assert.equal(migrated.get("bmw-520i").price, 5_400_000);
-  assert.equal(migrated.get("bmw-520i").mileage, 32140);
-  assert.equal(migrated.get("bmw-520i").fuel, "Petrol");
-  assert.equal(migrated.get("ford-f150").price, null);
-  assert.equal(migrated.get("ford-f150").status, "Pending");
+  assert.equal(migrated.get("c180-avantgarde-2014").price, 2_380_000);
+  assert.equal(migrated.get("c180-avantgarde-2014").mileage, 32140);
+  assert.equal(migrated.get("c180-avantgarde-2014").fuel, "Petrol");
+  assert.equal(migrated.get("c180-avantgarde-2014").body, "Sedan");
+  assert.equal(migrated.get("c180-avantgarde-2014").status, "In Stock");
   migrated.close();
 });
 
@@ -292,6 +288,7 @@ test("serves the production storefront and persistent uploads without swallowing
   mkdirSync(join(staticDirectory, "assets"), { recursive: true });
   mkdirSync(uploadDirectory, { recursive: true });
   writeFileSync(join(staticDirectory, "index.html"), "<main>Tristar storefront</main>");
+  writeFileSync(join(staticDirectory, "vehicle.html"), "<!doctype html><html><head><title>Vehicle Details</title><meta name=\"description\" content=\"Vehicle details\"></head><body><main>Vehicle Details</main><footer class=\"footer-brand\">Tristar Motors</footer></body></html>");
   writeFileSync(join(staticDirectory, "assets", "app.js"), "console.log('storefront')");
   const uploadedImage = Buffer.from("RIFF-test-WEBP");
   writeFileSync(join(uploadDirectory, "front-example.webp"), uploadedImage);
@@ -309,9 +306,11 @@ test("serves the production storefront and persistent uploads without swallowing
     assert.equal(home.status, 200);
     assert.match(await home.text(), /Tristar storefront/);
 
-    const route = await fetch(`${url}/cars/bmw-520i`);
+    const route = await fetch(`${url}/cars/c180-avantgarde-2014`);
     assert.equal(route.status, 200);
-    assert.match(await route.text(), /Tristar storefront/);
+    const routeHtml = await route.text();
+    assert.match(routeHtml, /2014 Mercedes-Benz C180/);
+    assert.match(routeHtml, /footer-brand/);
 
     const asset = await fetch(`${url}/assets/app.js`);
     assert.equal(asset.headers.get("content-type"), "text/javascript; charset=utf-8");

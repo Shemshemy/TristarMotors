@@ -147,8 +147,8 @@ function updatePriceRangeDisplay() {
     : new Intl.NumberFormat("en-KE").format(amount)}`;
   const minLabel = document.querySelector("#min-price-label");
   const maxLabel = document.querySelector("#max-price-label");
-  if (minLabel) minLabel.textContent = min === PRICE_RANGE_MIN ? "Any" : formatPrice(min);
-  if (maxLabel) maxLabel.textContent = max === PRICE_RANGE_MAX ? "Any" : formatPrice(max);
+  if (minLabel) minLabel.textContent = formatPrice(min);
+  if (maxLabel) maxLabel.textContent = formatPrice(max);
   const fill = document.querySelector("#price-range-fill");
   if (fill) {
     fill.style.left = `${(min / PRICE_RANGE_MAX) * 100}%`;
@@ -371,16 +371,14 @@ function setupHome() {
   if (!grid) return;
 
   restoreInventoryState();
-  const typeFilter = document.querySelector("#type-filter");
   const sortSelect = document.querySelector("#sort-select");
-  if (typeFilter) typeFilter.value = activeType;
   if (sortSelect) sortSelect.value = activeSort;
   const minPriceInput = document.querySelector("#min-price-filter");
   const maxPriceInput = document.querySelector("#max-price-filter");
   if (minPriceInput) minPriceInput.value = String(activePriceMin);
   if (maxPriceInput) maxPriceInput.value = String(activePriceMax);
   updatePriceRangeDisplay();
-  syncTypeTabs(activeType);
+  syncTypeFilters(activeType);
   renderVehicles();
   updateSavedCount();
 
@@ -445,41 +443,12 @@ function setupHome() {
     });
   });
 
-  // Body Type Cards
-  document.querySelectorAll(".body-type-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      activeType = card.dataset.type;
-      const typeSelect = document.querySelector("#type-filter");
-      if (typeSelect) typeSelect.value = activeType;
-      savedOnly = false;
-      currentPage = 1;
-      syncTypeTabs(activeType);
-      renderVehicles();
-      document.querySelector("#inventory")?.scrollIntoView({ behavior: "smooth" });
-    });
-  });
-
-  // Body Style Filter Tabs in Toolbar
-  document.querySelectorAll(".filter-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      activeType = tab.dataset.type;
-      const typeSelect = document.querySelector("#type-filter");
-      if (typeSelect) typeSelect.value = activeType;
-      savedOnly = false;
-      currentPage = 1;
-      syncTypeTabs(activeType);
-      renderVehicles();
-    });
-  });
-
   document.querySelectorAll(".quick-type-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       activeType = activeType === chip.dataset.type ? "all" : chip.dataset.type;
-      const typeSelect = document.querySelector("#type-filter");
-      if (typeSelect) typeSelect.value = activeType;
       savedOnly = false;
       currentPage = 1;
-      syncTypeTabs(activeType);
+      syncTypeFilters(activeType);
       renderVehicles();
     });
   });
@@ -503,7 +472,6 @@ function setupHome() {
     currentPage = 1;
 
     if (document.querySelector("#make-filter")) document.querySelector("#make-filter").value = "all";
-    if (document.querySelector("#type-filter")) document.querySelector("#type-filter").value = "all";
     if (minPriceInput) minPriceInput.value = String(PRICE_RANGE_MIN);
     if (maxPriceInput) maxPriceInput.value = String(PRICE_RANGE_MAX);
     updatePriceRangeDisplay();
@@ -511,7 +479,7 @@ function setupHome() {
     if (document.querySelector("#sort-select")) document.querySelector("#sort-select").value = "featured";
 
     syncMakeChips("all");
-    syncTypeTabs("all");
+    syncTypeFilters("all");
     renderVehicles();
   });
 
@@ -546,13 +514,7 @@ function syncMakeChips(make) {
   });
 }
 
-function syncTypeTabs(type) {
-  document.querySelectorAll(".filter-tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.type === type);
-  });
-  document.querySelectorAll(".body-type-card").forEach((card) => {
-    card.classList.toggle("active", card.dataset.type === type);
-  });
+function syncTypeFilters(type) {
   document.querySelectorAll(".quick-type-chip").forEach((chip) => {
     const active = chip.dataset.type === type;
     chip.classList.toggle("active", active);

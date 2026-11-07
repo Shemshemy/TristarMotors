@@ -652,123 +652,6 @@ h1 em, h2 em, h3 em {
 }
 
 /* ==========================================================================
-   BODY STYLE SELECTOR (Visual WebP Renders)
-   ========================================================================== */
-.body-style-section {
-  padding: 42px 0 24px;
-}
-
-.section-head-split {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.section-head-split h2 {
-  font-size: clamp(25px, 3.2vw, 36px);
-  margin-top: 4px;
-}
-
-.body-type-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-
-.body-type-card {
-  position: relative;
-  min-width: 0;
-  min-height: 76px;
-  padding: 9px 11px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr);
-  grid-template-rows: 1fr 1fr;
-  align-items: center;
-  column-gap: 11px;
-  text-align: left;
-  cursor: pointer;
-  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition), background var(--transition);
-}
-
-.body-type-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--gold);
-  box-shadow: var(--shadow-md);
-  background: #ffffff;
-}
-
-.body-type-card.active {
-  border-color: var(--ink);
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.body-type-card.active::after {
-  content: '';
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--gold);
-}
-
-.body-type-thumb {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  width: 62px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid #ecebe5;
-  border-radius: 11px;
-  background: #f5f5f1;
-}
-
-.body-type-thumb img {
-  width: 88%;
-  height: 76%;
-  object-fit: contain;
-  transition: transform var(--transition);
-}
-
-.body-type-card:hover .body-type-thumb img {
-  transform: scale(1.05);
-}
-
-.body-type-name {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: end;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.body-type-count {
-  grid-column: 2;
-  grid-row: 2;
-  align-self: start;
-  font-size: 10.5px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.body-type-card:focus-visible {
-  outline: 3px solid rgba(197, 160, 89, .42);
-  outline-offset: 2px;
-}
-
-/* ==========================================================================
    BRAND MARQUE CHIPS
    ========================================================================== */
 .brand-strip {
@@ -986,11 +869,11 @@ h1 em, h2 em, h3 em {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
-  width: 248px;
-  min-width: 220px;
-  min-height: 66px;
-  padding: 8px 13px 6px;
+  gap: 2px;
+  width: 278px;
+  min-width: 236px;
+  min-height: 68px;
+  padding: 7px 13px 6px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -1002,33 +885,33 @@ h1 em, h2 em, h3 em {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 10px;
-}
-
-.price-range-values > span {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  min-width: 0;
-}
-
-.price-range-values > span:last-child {
-  justify-content: flex-end;
-}
-
-.price-range-values small {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  gap: 12px;
 }
 
 .price-range-values strong {
   overflow: hidden;
   color: var(--ink);
-  font: 600 11px "Plus Jakarta Sans", sans-serif;
+  font: 600 10.5px "Plus Jakarta Sans", sans-serif;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.price-range-values strong:last-child {
+  text-align: right;
+}
+
+.price-range-control {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.price-range-label {
+  color: var(--gold-dark);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .price-range-slider {
@@ -1109,22 +992,6 @@ h1 em, h2 em, h3 em {
   outline-offset: 2px;
 }
 
-.price-filter-copy {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
-  gap: 1px;
-}
-
-.price-filter-label {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  line-height: 1.1;
-}
-
 /* Sort dropdown */
 .sort-wrap {
   display: flex;
@@ -1146,46 +1013,10 @@ h1 em, h2 em, h3 em {
   cursor: pointer;
 }
 
-/* Filter tabs */
-.filter-tabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  background: transparent;
-  padding: 0;
-}
-
-.filter-tab {
-  padding: 7px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-secondary);
-  background: var(--surface);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.filter-tab:hover {
-  color: var(--ink);
-  border-color: #b8b8ae;
-  background: #f7f7f4;
-}
-
-.filter-tab:focus-visible,
 .sort-select:focus-visible,
 .quick-type-chip:focus-visible {
   outline: 3px solid rgba(184, 135, 54, 0.38);
   outline-offset: 2px;
-}
-
-.filter-tab.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Car Grid */
@@ -2482,9 +2313,6 @@ body:has(#vehicle-detail) em {
   .brand-list {
     grid-template-columns: repeat(3, 1fr);
   }
-  .body-type-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
   .car-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -2656,40 +2484,9 @@ body:has(#vehicle-detail) em {
     padding: 8px 6px;
   }
 
-  .body-type-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .body-style-section {
-    padding: 32px 0 18px;
-  }
-
   .section-head-split {
     gap: 8px;
     margin-bottom: 14px;
-  }
-
-  .body-type-card {
-    min-height: 62px;
-    grid-template-columns: 44px minmax(0, 1fr);
-    column-gap: 8px;
-    padding: 7px 8px;
-    border-radius: 12px;
-  }
-
-  .body-type-thumb {
-    width: 44px;
-    height: 38px;
-    border-radius: 9px;
-  }
-
-  .body-type-name {
-    font-size: 12px;
-  }
-
-  .body-type-count {
-    font-size: 9px;
   }
 
   .brand-list {
@@ -2784,19 +2581,6 @@ body:has(#vehicle-detail) em {
 
   .search-field select {
     font-size: 16px;
-  }
-
-  .filter-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 2px 1px 8px;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .filter-tab {
-    min-height: 38px;
-    flex: 0 0 auto;
   }
 
   .car-bottom {
