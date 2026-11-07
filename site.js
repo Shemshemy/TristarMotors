@@ -508,6 +508,11 @@ function setupScrollEffects() {
   const hero = document.querySelector(".hero");
   const scrollProgress = document.querySelector("#scroll-progress");
   const scrollTopBtn = document.querySelector("#scroll-top");
+  const sectionLinks = [...document.querySelectorAll('#main-nav a[href^="#"]')];
+  const navSections = sectionLinks
+    .map((link) => ({ link, section: document.getElementById(link.getAttribute("href").slice(1)) }))
+    .filter(({ section }) => section)
+    .sort((a, b) => a.section.getBoundingClientRect().top - b.section.getBoundingClientRect().top);
 
   if (hero && header) {
     header.classList.add("header-hero");
@@ -525,6 +530,21 @@ function setupScrollEffects() {
     }
     if (scrollTopBtn) {
       scrollTopBtn.classList.toggle("visible", y > 450);
+    }
+    if (navSections.length) {
+      const marker = y + (header?.getBoundingClientRect().height || 76) + 4;
+      let current = null;
+      for (const entry of navSections) {
+        const top = entry.section.getBoundingClientRect().top + y;
+        if (top <= marker) current = entry;
+        else break;
+      }
+      for (const { link } of navSections) {
+        const active = current?.link === link;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
     }
   };
 
