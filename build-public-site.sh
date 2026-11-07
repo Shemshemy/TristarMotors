@@ -10,7 +10,8 @@ cp -R images/cars/. "$output_dir/images/cars/"
 for image in suv.webp sedan.webp coupe.webp roadster.webp wagon.webp; do
   cp "images/body-types/$image" "$output_dir/images/body-types/$image"
 done
-cp Logos/TristarMotors.png "$output_dir/Logos/TristarMotors.png"
+cp "Logos/Tristar Motors Classic Wordmark.png" "$output_dir/Logos/tristar-black.png"
+cp Logos/tristar_motors_white.png "$output_dir/Logos/tristar-white.png"
 mkdir -p "$output_dir/assets" "$output_dir/images/brand"
 cp -R dealer-platform/dist/assets/. "$output_dir/assets/"
 cp -R dealer-platform/dist/images/brand/. "$output_dir/images/brand/"
