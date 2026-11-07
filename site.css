@@ -890,6 +890,7 @@ h1 em, h2 em, h3 em {
   background: var(--surface);
   font: 600 12px "Plus Jakarta Sans", sans-serif;
   white-space: nowrap;
+  flex: 0 0 auto;
   cursor: pointer;
   transition: color var(--transition), border-color var(--transition), background var(--transition), box-shadow var(--transition);
 }
@@ -909,7 +910,12 @@ h1 em, h2 em, h3 em {
   color: var(--muted);
   font-size: 11px;
   font-weight: 500;
+  min-width: 19px;
   margin-left: 1px;
+  padding: 2px 5px;
+  border-radius: var(--radius-full);
+  background: #f0f0ed;
+  text-align: center;
 }
 
 .quick-type-chip:hover {
@@ -926,6 +932,7 @@ h1 em, h2 em, h3 em {
 
 .quick-type-chip.active .quick-type-count {
   color: #176b48;
+  background: rgba(34, 119, 80, 0.1);
 }
 
 .quick-type-chip.active img {
@@ -975,21 +982,147 @@ h1 em, h2 em, h3 em {
   gap: 8px;
 }
 
-.inventory-filter-form select {
-  min-height: 38px;
-  padding: 6px 30px 6px 11px;
+.price-filter-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  width: 248px;
+  min-width: 220px;
+  min-height: 66px;
+  padding: 8px 13px 6px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: var(--surface);
+  box-shadow: 0 2px 8px rgba(15, 17, 20, 0.035);
   color: var(--ink);
-  font: 600 13px "Plus Jakarta Sans", sans-serif;
 }
 
-.inventory-filter-form .search-submit {
+.price-range-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.price-range-values > span {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
   min-width: 0;
-  height: 38px;
-  padding: 0 16px;
-  font: 700 13px "Plus Jakarta Sans", sans-serif;
+}
+
+.price-range-values > span:last-child {
+  justify-content: flex-end;
+}
+
+.price-range-values small {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.price-range-values strong {
+  overflow: hidden;
+  color: var(--ink);
+  font: 600 11px "Plus Jakarta Sans", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price-range-slider {
+  position: relative;
+  height: 20px;
+  margin: 0 1px;
+  touch-action: pan-y;
+}
+
+.price-range-track,
+.price-range-fill {
+  position: absolute;
+  top: 8px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.price-range-track {
+  right: 0;
+  left: 0;
+  background: #deded9;
+}
+
+.price-range-fill {
+  background: var(--ink);
+}
+
+.price-range-slider input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.price-range-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.price-range-slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: transparent;
+}
+
+.price-range-slider input[type="range"]::-webkit-slider-thumb {
+  width: 17px;
+  height: 17px;
+  margin-top: -6.5px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #17191b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.price-range-slider input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #17191b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.price-range-slider input[type="range"]:focus-visible::-webkit-slider-thumb,
+.price-range-slider input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 3px solid rgba(184, 135, 54, 0.4);
+  outline-offset: 2px;
+}
+
+.price-filter-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.price-filter-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  line-height: 1.1;
 }
 
 /* Sort dropdown */
@@ -2596,13 +2729,21 @@ body:has(#vehicle-detail) em {
     width: 100%;
     min-width: 0;
     overflow-x: auto;
-    padding: 1px 1px 4px;
+    gap: 10px;
+    padding: 2px 2px 8px;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
 
   .quick-type-filters::-webkit-scrollbar {
     display: none;
+  }
+
+  .quick-type-chip {
+    min-height: 40px;
+    padding-right: 11px;
+    scroll-snap-align: start;
   }
 
   .inventory-right {
@@ -2614,21 +2755,15 @@ body:has(#vehicle-detail) em {
   }
 
   .inventory-filter-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     width: 100%;
   }
 
-  .inventory-filter-form select {
+  .price-filter-bar {
+    flex: 1 1 auto;
+    width: auto;
     min-width: 0;
-    width: 100%;
-    min-height: 42px;
-    font-size: 13px;
-  }
-
-  .inventory-filter-form .search-submit {
-    grid-column: 1 / -1;
-    width: 100%;
+    min-height: 68px;
   }
 
   .sort-wrap {

@@ -125,26 +125,20 @@
               <option value="mileage-asc">Lowest Mileage</option>
             </select>
           </div>
-          <form class="inventory-filter-form" id="search-form" role="search" aria-label="Filter vehicles">
-            <label class="visually-hidden" for="type-filter">Body style</label>
-            <select id="type-filter" aria-label="Filter by body style">
-              <option value="all">All body styles</option>
-              <option value="SUV">SUV</option>
-              <option value="Sedan">Sedan</option>
-              <option value="Coupe">Coupe</option>
-              <option value="Roadster">Roadster</option>
-              <option value="Wagon">Wagon</option>
-            </select>
-            <label class="visually-hidden" for="budget-filter">Price range</label>
-            <select id="budget-filter" aria-label="Filter by price">
-              <option value="all">Any price</option>
-              <option value="10000000">Under KSh 10M</option>
-              <option value="15000000">Under KSh 15M</option>
-              <option value="20000000">Under KSh 20M</option>
-              <option value="20000000+">KSh 20M and above</option>
-            </select>
-            <button class="button button-dark search-submit" type="submit">Apply</button>
-          </form>
+          <div class="inventory-filter-form" role="group" aria-label="Filter vehicles">
+            <div class="price-filter-bar" aria-label="Price range filter">
+              <div class="price-range-values">
+                <span><small>MIN</small><strong id="min-price-label">KSh 0</strong></span>
+                <span><small>MAX</small><strong id="max-price-label">KSh 20M</strong></span>
+              </div>
+              <div class="price-range-slider" id="price-range-slider">
+                <div class="price-range-track"></div>
+                <div class="price-range-fill" id="price-range-fill"></div>
+                <input id="min-price-filter" type="range" min="0" max="20000000" step="250000" value="0" aria-label="Minimum price">
+                <input id="max-price-filter" type="range" min="0" max="20000000" step="250000" value="20000000" aria-label="Maximum price">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

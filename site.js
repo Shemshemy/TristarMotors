@@ -96,7 +96,11 @@ const loadSaved = () => {
 let savedVehicles = loadSaved();
 let activeMake = "all";
 let activeType = "all";
-let activeBudget = "all";
+const PRICE_RANGE_MIN = 0;
+const PRICE_RANGE_MAX = 20000000;
+const PRICE_RANGE_STEP = 250000;
+let activePriceMin = PRICE_RANGE_MIN;
+let activePriceMax = PRICE_RANGE_MAX;
 let activeFuel = "all";
 let activeSort = "featured";
 let savedOnly = false;
@@ -108,7 +112,8 @@ const inventoryScrollKey = "tristar-inventory-scroll-y";
 function restoreInventoryState() {
   const params = new URLSearchParams(location.search);
   activeType = params.get("type") || "all";
-  activeBudget = params.get("price") || "all";
+  activePriceMin = Math.min(PRICE_RANGE_MAX, Math.max(PRICE_RANGE_MIN, Number(params.get("minPrice")) || PRICE_RANGE_MIN));
+  activePriceMax = Math.min(PRICE_RANGE_MAX, Math.max(activePriceMin + PRICE_RANGE_STEP, Number(params.get("maxPrice")) || PRICE_RANGE_MAX));
   activeSort = params.get("sort") || "featured";
   currentPage = Math.max(1, Number(params.get("page")) || 1);
   savedOnly = params.get("saved") === "1";
@@ -116,14 +121,39 @@ function restoreInventoryState() {
 
 function syncInventoryUrl() {
   const url = new URL(location.href);
-  const values = { type: activeType, price: activeBudget, sort: activeSort, page: currentPage };
+  const values = { type: activeType, sort: activeSort, page: currentPage };
   Object.entries(values).forEach(([key, value]) => {
     if (value && value !== "all" && value !== "featured" && !(key === "page" && value === 1)) url.searchParams.set(key, value);
     else url.searchParams.delete(key);
   });
+  if (activePriceMin > PRICE_RANGE_MIN) url.searchParams.set("minPrice", String(activePriceMin));
+  else url.searchParams.delete("minPrice");
+  if (activePriceMax < PRICE_RANGE_MAX) url.searchParams.set("maxPrice", String(activePriceMax));
+  else url.searchParams.delete("maxPrice");
+  url.searchParams.delete("price");
   if (savedOnly) url.searchParams.set("saved", "1");
   else url.searchParams.delete("saved");
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function updatePriceRangeDisplay() {
+  const minInput = document.querySelector("#min-price-filter");
+  const maxInput = document.querySelector("#max-price-filter");
+  if (!minInput || !maxInput) return;
+  const min = Number(minInput.value);
+  const max = Number(maxInput.value);
+  const formatPrice = (amount) => `KSh ${amount >= 1000000
+    ? `${(amount / 1000000).toLocaleString("en-KE", { maximumFractionDigits: 2 })}M`
+    : new Intl.NumberFormat("en-KE").format(amount)}`;
+  const minLabel = document.querySelector("#min-price-label");
+  const maxLabel = document.querySelector("#max-price-label");
+  if (minLabel) minLabel.textContent = min === PRICE_RANGE_MIN ? "Any" : formatPrice(min);
+  if (maxLabel) maxLabel.textContent = max === PRICE_RANGE_MAX ? "Any" : formatPrice(max);
+  const fill = document.querySelector("#price-range-fill");
+  if (fill) {
+    fill.style.left = `${(min / PRICE_RANGE_MAX) * 100}%`;
+    fill.style.width = `${((max - min) / PRICE_RANGE_MAX) * 100}%`;
+  }
 }
 
 // Toast Alert
@@ -178,12 +208,7 @@ function renderVehicles() {
     const matchType = activeType === "all" || car.type === activeType;
     const matchFuel = activeFuel === "all" || car.fuel === activeFuel;
 
-    let matchBudget = true;
-    if (activeBudget !== "all") {
-      matchBudget = activeBudget === "20000000+"
-        ? car.price >= 20000000
-        : car.price < Number(activeBudget);
-    }
+    const matchBudget = car.price >= activePriceMin && car.price <= activePriceMax;
     const matchSaved = !savedOnly || savedVehicles.has(car.id);
     return matchMake && matchType && matchFuel && matchBudget && matchSaved;
   });
@@ -347,11 +372,14 @@ function setupHome() {
 
   restoreInventoryState();
   const typeFilter = document.querySelector("#type-filter");
-  const budgetFilter = document.querySelector("#budget-filter");
   const sortSelect = document.querySelector("#sort-select");
   if (typeFilter) typeFilter.value = activeType;
-  if (budgetFilter) budgetFilter.value = activeBudget;
   if (sortSelect) sortSelect.value = activeSort;
+  const minPriceInput = document.querySelector("#min-price-filter");
+  const maxPriceInput = document.querySelector("#max-price-filter");
+  if (minPriceInput) minPriceInput.value = String(activePriceMin);
+  if (maxPriceInput) maxPriceInput.value = String(activePriceMax);
+  updatePriceRangeDisplay();
   syncTypeTabs(activeType);
   renderVehicles();
   updateSavedCount();
@@ -384,17 +412,23 @@ function setupHome() {
   });
 
   // Search Form
-  const searchForm = document.querySelector("#search-form");
-  searchForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    activeBudget = document.querySelector("#budget-filter")?.value || "all";
-    activeType = document.querySelector("#type-filter")?.value || "all";
-    activeFuel = document.querySelector("#fuel-filter")?.value || "all";
-    savedOnly = false;
-    currentPage = 1;
-
-    syncTypeTabs(activeType);
-    renderVehicles();
+  [minPriceInput, maxPriceInput].forEach((input) => {
+    input?.addEventListener("input", () => {
+      const min = Number(minPriceInput.value);
+      const max = Number(maxPriceInput.value);
+      if (min >= max) {
+        if (input === minPriceInput) minPriceInput.value = String(Math.max(PRICE_RANGE_MIN, max - PRICE_RANGE_STEP));
+        else maxPriceInput.value = String(Math.min(PRICE_RANGE_MAX, min + PRICE_RANGE_STEP));
+      }
+      updatePriceRangeDisplay();
+    });
+    input?.addEventListener("change", () => {
+      activePriceMin = Number(minPriceInput.value);
+      activePriceMax = Number(maxPriceInput.value);
+      savedOnly = false;
+      currentPage = 1;
+      renderVehicles();
+    });
   });
 
   // Marque Chips
@@ -461,7 +495,8 @@ function setupHome() {
   document.querySelector("#clear-filters")?.addEventListener("click", () => {
     activeMake = "all";
     activeType = "all";
-    activeBudget = "all";
+    activePriceMin = PRICE_RANGE_MIN;
+    activePriceMax = PRICE_RANGE_MAX;
     activeFuel = "all";
     activeSort = "featured";
     savedOnly = false;
@@ -469,7 +504,9 @@ function setupHome() {
 
     if (document.querySelector("#make-filter")) document.querySelector("#make-filter").value = "all";
     if (document.querySelector("#type-filter")) document.querySelector("#type-filter").value = "all";
-    if (document.querySelector("#budget-filter")) document.querySelector("#budget-filter").value = "all";
+    if (minPriceInput) minPriceInput.value = String(PRICE_RANGE_MIN);
+    if (maxPriceInput) maxPriceInput.value = String(PRICE_RANGE_MAX);
+    updatePriceRangeDisplay();
     if (document.querySelector("#fuel-filter")) document.querySelector("#fuel-filter").value = "all";
     if (document.querySelector("#sort-select")) document.querySelector("#sort-select").value = "featured";
 
