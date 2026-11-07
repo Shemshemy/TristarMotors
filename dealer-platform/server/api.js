@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { AdminAuth } from "./auth.js";
 import { INVENTORY_STATUSES } from "./inventory.js";
@@ -135,6 +135,50 @@ export function createInventoryApi(inventory, {
   allowRemote = false,
 } = {}) {
   const auth = new AdminAuth(adminPassword, { passwordFilePath });
+  const configuredSiteUrl = process.env.TRISTAR_SITE_URL?.replace(/\/$/, "");
+  const siteOrigin = (request) => {
+    if (configuredSiteUrl) return configuredSiteUrl;
+    const host = request.headers.host;
+    if (!host || !/^[a-z0-9.-]+(?::\d{1,5})?$/i.test(host)) return "https://tristarmotors.co.ke";
+    return `${request.headers["x-forwarded-proto"] === "https" ? "https" : "http"}://${host}`;
+  };
+  const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+  const jsonForHtml = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
+  const vehiclePage = async (request, response, car, origin) => {
+    const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} for Sale in Nairobi | Tristar Motors`;
+    const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi for KSh ${Number(car.price).toLocaleString("en-KE")}. ${Number(car.mileage).toLocaleString("en-KE")} km, ${car.status === "In Stock" ? "available" : String(car.status).toLowerCase()}. Contact Tristar Motors to arrange a viewing.`;
+    const canonical = `${origin}/cars/${encodeURIComponent(car.id)}`;
+    const item = {
+      "@context": "https://schema.org", "@type": "Vehicle", name: `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`,
+      brand: { "@type": "Brand", name: car.make }, model: car.model, vehicleModelDate: String(car.year), bodyType: car.body || car.type,
+      mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" }, image: [car.image, ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
+      description: car.description || description, offers: { "@type": "Offer", url: canonical, price: Number(car.price), priceCurrency: "KES", availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: "La Colline Garden, Masaba Road, Upper Hill, Nairobi, Kenya" } },
+    };
+    const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
+    const template = await readFile(htmlPath, "utf8");
+    const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(car.image, origin).href)}"><meta property="og:type" content="product"><script type="application/ld+json">${jsonForHtml(item)}</script>`;
+    const summary = `<section class="seo-vehicle-summary"><h1>${esc(title)}</h1><p>${esc(description)}</p><p>Price: KSh ${Number(car.price).toLocaleString("en-KE")} · Mileage: ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.transmission || "")}</p><img src="${esc(new URL(car.image, origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" width="800"><a href="https://wa.me/254734490475">Ask Tristar Motors about this vehicle</a></section>`;
+    const html = template.replace(/<title>.*?<\/title>/i, `<title>${esc(title)}</title>`)
+      .replace(/<meta name="description"[^>]*>/i, "")
+      .replace("</head>", `${seo}</head>`)
+      .replace("</main>", `<noscript>${summary}</noscript></main>`);
+    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
+    response.end(request.method === "HEAD" ? undefined : html);
+  };
+  const homePage = async (request, response) => {
+    const filePath = staticFilePath(staticDirectory, "/index.html");
+    let html = await readFile(filePath, "utf8");
+    const cars = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
+    const content = cars.map((car) => {
+      const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
+      const href = `/cars/${encodeURIComponent(car.id)}`;
+      return `<article><a href="${esc(href)}"><img src="${esc(car.image || "")}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>KSh ${Number(car.price).toLocaleString("en-KE")} · ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
+    }).join("");
+    html = html.replace(/(<div class="car-grid" id="car-grid"[^>]*>)[\s\S]*?(<\/div>)/, `$1${content}$2`);
+    html = html.replace("</body>", `<noscript><section><h2>Cars for sale in Nairobi</h2>${content}</section></noscript></body>`);
+    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
+    response.end(request.method === "HEAD" ? undefined : html);
+  };
   return createServer(async (request, response) => {
     if (!allowRemote && !isLoopback(request.socket.remoteAddress)) {
       send(response, 403, { error: "This local prototype is only available from this computer" });
@@ -181,6 +225,36 @@ export function createInventoryApi(inventory, {
       }
       if (request.method === "GET" && url.pathname === "/api/cars") {
         send(response, 200, inventory.list());
+        return;
+      }
+      if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && url.pathname === "/robots.txt") {
+        response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" });
+        response.end(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /#\/admin\nSitemap: ${siteOrigin(request)}/sitemap.xml\n`);
+        return;
+      }
+      if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && url.pathname === "/sitemap.xml") {
+        const origin = siteOrigin(request);
+        const urls = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0).map((car) => `<url><loc>${esc(origin)}/cars/${encodeURIComponent(car.id)}</loc></url>`).join("");
+        const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${esc(origin)}/</loc></url>${urls}</urlset>`;
+        response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" });
+        response.end(request.method === "HEAD" ? undefined : xml);
+        return;
+      }
+      if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && ["/", "/index.html"].includes(url.pathname)) {
+        await homePage(request, response);
+        return;
+      }
+      const vehicleRoute = url.pathname.match(/^\/cars\/([^/]+)$/);
+      if (staticDirectory && vehicleRoute && (request.method === "GET" || request.method === "HEAD")) {
+        let id = "";
+        try { id = decodeURIComponent(vehicleRoute[1]); } catch {}
+        const car = inventory.get(id);
+        if (!car || car.make !== "Mercedes-Benz" || !(Number(car.price) > 0)) {
+          response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" });
+          response.end("Vehicle not found");
+          return;
+        }
+        await vehiclePage(request, response, car, siteOrigin(request));
         return;
       }
       if (staticDirectory && !url.pathname.startsWith("/api") &&

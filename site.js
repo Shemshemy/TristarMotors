@@ -209,8 +209,8 @@ function renderVehicles() {
 
     return `
       <article class="car-card" data-id="${escapeHTML(car.id)}">
-        <a class="car-image-wrap" href="vehicle.html?car=${encodeURIComponent(car.id)}" aria-label="View ${escapeHTML(car.year)} ${escapeHTML(car.make)} ${escapeHTML(car.model)}">
-          <img class="car-image" src="${escapeHTML(car.image)}" alt="${escapeHTML(car.year)} ${escapeHTML(car.make)} ${escapeHTML(car.model)}" loading="lazy">
+        <a class="car-image-wrap" href="/cars/${encodeURIComponent(car.id)}" aria-label="View ${escapeHTML(car.year)} ${escapeHTML(car.make)} ${escapeHTML(car.model)}">
+          <img class="car-image" src="${escapeHTML(car.image)}" alt="${escapeHTML(`${car.year} ${car.make} ${car.model} exterior`)}" loading="lazy">
           <span class="car-badge ${car.status === "Sold" ? "car-badge-sold" : car.status === "Pending" ? "car-badge-pending" : ""}">${escapeHTML(car.badge)}</span>
           <span class="car-condition-tag">${escapeHTML(car.chassis)}</span>
         </a>
@@ -223,7 +223,7 @@ function renderVehicles() {
             <span class="car-year">${escapeHTML(car.year)}</span>
           </div>
           <h3 class="car-title">
-            <a href="vehicle.html?car=${encodeURIComponent(car.id)}">${escapeHTML(car.model)}</a>
+            <a href="/cars/${encodeURIComponent(car.id)}">${escapeHTML(car.model)}</a>
           </h3>
           <div class="car-specs">
             <div class="car-spec-item" title="Odometer">
@@ -253,7 +253,7 @@ function renderVehicles() {
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.2-4.9a8.2 8.2 0 1 1 16-3.4Z"/><path d="M8.2 8.1c.3-.6.7-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.6.5-1.3.7-2.1.5-1-.2-2.3-.8-3.6-2-1.1-1-1.9-2.3-2.1-3.2-.3-.9 0-1.8.8-2.3Z"/></svg>
                 <span>WhatsApp</span>
               </a>
-              <a class="car-link" href="vehicle.html?car=${encodeURIComponent(car.id)}">
+              <a class="car-link" href="/cars/${encodeURIComponent(car.id)}">
                 <span>Details</span> <span aria-hidden="true">↗</span>
               </a>
             </div>
@@ -542,7 +542,7 @@ function setupVehiclePage() {
   if (!detail) return;
 
   const params = new URLSearchParams(location.search);
-  const carId = params.get("car");
+  const carId = decodeURIComponent(location.pathname.match(/^\/cars\/([^/]+)$/)?.[1] || params.get("car") || "");
   const car = carId ? vehicles.find((v) => v.id === carId) : vehicles[0];
   if (!car) {
     detail.innerHTML = `<div class="empty-state"><h1>Vehicle not found</h1><p>This vehicle may no longer be in our collection.</p><a class="button button-dark" href="index.html#inventory">Browse the collection</a></div>`;
@@ -588,14 +588,14 @@ function setupVehiclePage() {
   let activeGalleryIndex = 0;
   if (mainImage) {
     mainImage.src = galleryImages[0];
-    mainImage.alt = `${car.year} Mercedes-Benz ${car.model}`;
+    mainImage.alt = `${car.year} Mercedes-Benz ${car.model} exterior`;
   }
 
   const thumbContainer = document.getElementById("detail-thumbs");
   if (thumbContainer && galleryImages.length > 0) {
     thumbContainer.innerHTML = galleryImages.map((imgUrl, i) => `
       <button class="thumb-btn ${i === 0 ? "active" : ""}" type="button" data-index="${i}" aria-label="Angle ${i + 1}" aria-current="${i === 0 ? "true" : "false"}">
-        <img src="${imgUrl}" alt="${car.model} photo ${i + 1}" loading="lazy">
+        <img src="${imgUrl}" alt="${car.year} Mercedes-Benz ${car.model} photo ${i + 1}" loading="lazy">
       </button>
     `).join("");
 
@@ -685,16 +685,16 @@ function setupVehiclePage() {
     const related = vehicles.filter((v) => v.id !== car.id).slice(0, 3);
     relatedGrid.innerHTML = related.map((r) => `
       <article class="car-card">
-        <a class="car-image-wrap" href="vehicle.html?car=${encodeURIComponent(r.id)}">
+        <a class="car-image-wrap" href="/cars/${encodeURIComponent(r.id)}">
           <img class="car-image" src="${r.image}" alt="${r.model}" loading="lazy">
           <span class="car-badge">${r.badge}</span>
         </a>
         <div class="car-info">
           <div class="car-topline"><span class="car-make">${r.class}</span><span class="car-year">${r.year}</span></div>
-          <h4 class="car-title" style="font-size: 16px; margin: 4px 0 10px;"><a href="vehicle.html?car=${encodeURIComponent(r.id)}">${r.model}</a></h4>
+          <h4 class="car-title" style="font-size: 16px; margin: 4px 0 10px;"><a href="/cars/${encodeURIComponent(r.id)}">${r.model}</a></h4>
           <div class="car-bottom">
             <strong class="car-price" style="font-size: 18px;">${money(r.price)}</strong>
-            <a class="car-link" href="vehicle.html?car=${encodeURIComponent(r.id)}">View ↗</a>
+            <a class="car-link" href="/cars/${encodeURIComponent(r.id)}">View ↗</a>
           </div>
         </div>
       </article>
