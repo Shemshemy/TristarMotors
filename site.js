@@ -293,7 +293,10 @@ function renderVehicles() {
           <div class="car-bottom">
             <div class="car-price-block">
               <span class="car-price-label">Cash Price (Duty Paid)</span>
-              <strong class="car-price">${money(car.price)}</strong>
+              <div class="car-price-status-row">
+                <strong class="car-price">${money(car.price)}</strong>
+                <span class="car-stock-status car-stock-${car.status === "Pending" ? "pending" : car.status === "Sold" ? "sold" : "available"}">${car.status === "In Stock" ? "AVAILABLE" : escapeHTML(car.status).toUpperCase()}</span>
+              </div>
             </div>
             <div class="car-card-actions">
               <a class="button button-whatsapp car-btn-wa" href="${waUrl}" target="_blank" rel="noopener" aria-label="Ask about ${escapeHTML(car.model)} on WhatsApp">
@@ -807,7 +810,13 @@ function setupVehiclePage() {
           <div class="car-topline"><span class="car-make">${r.class}</span><span class="car-year">${r.year}</span></div>
           <h4 class="car-title" style="font-size: 16px; margin: 4px 0 10px;"><a href="/cars/${encodeURIComponent(r.id)}">${r.model}</a></h4>
           <div class="car-bottom">
-            <strong class="car-price" style="font-size: 18px;">${money(r.price)}</strong>
+            <div class="car-price-block">
+              <span class="car-price-label">Cash Price (Duty Paid)</span>
+              <div class="car-price-status-row">
+                <strong class="car-price" style="font-size: 18px;">${money(r.price)}</strong>
+                <span class="car-stock-status car-stock-${r.status === "Pending" ? "pending" : r.status === "Sold" ? "sold" : "available"}">${r.status === "In Stock" ? "AVAILABLE" : escapeHTML(r.status).toUpperCase()}</span>
+              </div>
+            </div>
             <div class="car-card-actions">
               <a class="button button-whatsapp car-btn-wa" href="${relatedWaUrl}" target="_blank" rel="noopener" aria-label="Ask about ${escapeHTML(r.model)} on WhatsApp">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.48 15.02L2 22l5.14-1.35A9.9 9.9 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.05.8.82-2.97-.2-.31A8.1 8.1 0 1 1 12.04 20Zm4.45-6.06c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.68 2.56 4.06 3.58.56.24 1 .39 1.34.5.56.18 1.07.16 1.47.1.45-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
