@@ -20,12 +20,24 @@ function normalizeFuel(fuel) {
   return String(fuel).toLowerCase() === "gasoline" ? "Petrol" : fuel;
 }
 
+function normalizeDrivetrain(drivetrain) {
+  const value = String(drivetrain || "").trim();
+  const normalized = value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (!normalized) return value;
+  if (/4matic/.test(normalized)) return "4MATIC";
+  if (/front wheel drive|\bfwd\b/.test(normalized)) return "FWD";
+  if (/rear wheel drive|\brwd\b/.test(normalized)) return "RWD";
+  if (/all wheel drive|\bawd\b/.test(normalized)) return "AWD";
+  return value;
+}
+
 function normalizeCar(car) {
   return {
     ...car,
     body: car.body || car.type,
     type: car.type || car.body,
     fuel: normalizeFuel(car.fuel),
+    drivetrain: normalizeDrivetrain(car.drivetrain),
   };
 }
 

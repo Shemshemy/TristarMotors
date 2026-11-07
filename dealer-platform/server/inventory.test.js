@@ -57,6 +57,7 @@ test("serves seeded vehicles and persists a sold status across database reopen",
   assert.ok(cars.every((car) => car.fuel !== "Gasoline"));
   assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").fuel, "Petrol");
   assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").price, 2_380_000);
+  assert.ok(cars.every((car) => ["FWD", "RWD", "AWD", "4MATIC"].includes(car.drivetrain)));
 
   const statusResponse = await adminFetch("/api/cars/c180-avantgarde-2014/status", {
     method: "PATCH",
@@ -268,8 +269,10 @@ test("normalizes legacy inventory fields without changing vehicle details", () =
     CREATE TABLE app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   `);
   const insert = legacyDb.prepare("INSERT INTO inventory (id, data_json, status) VALUES (?, ?, ?)");
-  const legacyCar = { id: "c180-avantgarde-2014", year: 2014, make: "Mercedes-Benz", model: "C180 BlueEFFICIENCY Avantgarde", price: 2_380_000, mileage: 32140, fuel: "Gasoline", type: "Sedan", status: "In Stock" };
+  const legacyCar = { id: "c180-avantgarde-2014", year: 2014, make: "Mercedes-Benz", model: "C180 BlueEFFICIENCY Avantgarde", price: 2_380_000, mileage: 32140, fuel: "Gasoline", type: "Sedan", drivetrain: "Rear-Wheel Drive", status: "In Stock" };
+  const legacy4Matic = { ...legacyCar, id: "legacy-4matic", model: "Legacy 4MATIC", drivetrain: "Permanent 4MATIC (3 Diff Locks)" };
   insert.run(legacyCar.id, JSON.stringify(legacyCar), legacyCar.status);
+  insert.run(legacy4Matic.id, JSON.stringify(legacy4Matic), legacy4Matic.status);
   legacyDb.prepare("INSERT INTO app_meta (key, value) VALUES ('seeded', 'true')").run();
   legacyDb.close();
 
@@ -278,6 +281,8 @@ test("normalizes legacy inventory fields without changing vehicle details", () =
   assert.equal(migrated.get("c180-avantgarde-2014").mileage, 32140);
   assert.equal(migrated.get("c180-avantgarde-2014").fuel, "Petrol");
   assert.equal(migrated.get("c180-avantgarde-2014").body, "Sedan");
+  assert.equal(migrated.get("c180-avantgarde-2014").drivetrain, "RWD");
+  assert.equal(migrated.get("legacy-4matic").drivetrain, "4MATIC");
   assert.equal(migrated.get("c180-avantgarde-2014").status, "In Stock");
   migrated.close();
 });
