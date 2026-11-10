@@ -52,6 +52,9 @@ export class InventoryDatabase {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new DatabaseSync(filename);
     this.db.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA synchronous = NORMAL;
+      PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS inventory (
         id TEXT PRIMARY KEY,
         data_json TEXT NOT NULL,

@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { after, before, test } from "node:test";
 import { createInventoryApi } from "./api.js";
 import { InventoryDatabase } from "./inventory.js";
+import { RateLimiter } from "./limiter.js";
 
 let directory;
 let database;
@@ -340,5 +341,36 @@ test("serves the production storefront and persistent uploads without swallowing
     assert.equal((await fetch(`${url}/api/health`)).status, 200);
   } finally {
     await new Promise((resolve, reject) => productionServer.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("rate limiter throttles flooding requests with 429 Too Many Requests", async () => {
+  const limiter = new RateLimiter({ windowMs: 1000, max: 5 });
+  const testServer = createInventoryApi(database, {
+    adminPassword: "local-test-password-strong-enough",
+    rateLimiter: limiter,
+  });
+  await new Promise((resolve) => testServer.listen(0, "127.0.0.1", resolve));
+  const testUrl = `http://127.0.0.1:${testServer.address().port}`;
+
+  try {
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(`${testUrl}/api/cars`);
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get("x-ratelimit-limit"), "5");
+    }
+    const blocked = await fetch(`${testUrl}/api/cars`);
+    assert.equal(blocked.status, 429);
+    assert.equal(blocked.headers.get("x-ratelimit-remaining"), "0");
+    assert.ok(blocked.headers.has("retry-after"));
+    const body = await blocked.json();
+    assert.match(body.error, /Too many requests/);
+
+    // Health check should bypass rate limit
+    const health = await fetch(`${testUrl}/api/health`);
+    assert.equal(health.status, 200);
+  } finally {
+    limiter.close();
+    await new Promise((resolve, reject) => testServer.close((error) => error ? reject(error) : resolve()));
   }
 });

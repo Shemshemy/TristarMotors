@@ -5,6 +5,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { AdminAuth } from "./auth.js";
 import { INVENTORY_STATUSES } from "./inventory.js";
+import { RateLimiter, getClientIp } from "./limiter.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -99,11 +100,31 @@ async function serveStaticFile(request, response, filePath, pathname) {
   }
   if (!fileInfo.isFile()) return false;
 
+  const ext = extname(filePath).toLowerCase();
+  if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+    const referer = request.headers.referer;
+    if (referer) {
+      try {
+        const refererHost = new URL(referer).host;
+        const requestHost = request.headers.host;
+        const isAllowedOrigin = !requestHost || refererHost === requestHost ||
+          refererHost.includes("localhost") || refererHost.includes("127.0.0.1") ||
+          refererHost.endsWith("tristarmotors.co.ke") || refererHost.endsWith("onrender.com");
+        if (!isAllowedOrigin) {
+          response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+          response.end("Hotlinking forbidden");
+          return true;
+        }
+      } catch {}
+    }
+  }
+
   const immutable = pathname.startsWith("/assets/");
   response.writeHead(200, {
-    "Content-Type": STATIC_CONTENT_TYPES.get(extname(filePath).toLowerCase()) || "application/octet-stream",
+    "Content-Type": STATIC_CONTENT_TYPES.get(ext) || "application/octet-stream",
     "Content-Length": fileInfo.size,
     "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "no-cache",
+    "Content-Disposition": "inline",
     "X-Content-Type-Options": "nosniff",
   });
   if (request.method === "HEAD") {
@@ -133,6 +154,7 @@ export function createInventoryApi(inventory, {
   uploadDirectory,
   staticDirectory,
   allowRemote = false,
+  rateLimiter = new RateLimiter(),
 } = {}) {
   const auth = new AdminAuth(adminPassword, { passwordFilePath });
   const configuredSiteUrl = process.env.TRISTAR_SITE_URL?.replace(/\/$/, "");
@@ -186,6 +208,40 @@ export function createInventoryApi(inventory, {
     }
 
     const url = new URL(request.url, "http://127.0.0.1");
+    const startTime = Date.now();
+    if (process.env.NODE_ENV === "production" || process.env.VERBOSE_LOGGING) {
+      response.on("finish", () => {
+        if (url.pathname !== "/api/health") {
+          console.log(`[${new Date().toISOString()}] ${request.method} ${url.pathname} ${response.statusCode} (${Date.now() - startTime}ms)`);
+        }
+      });
+    }
+
+    const clientIp = getClientIp(request);
+    const isHealthCheck = url.pathname === "/api/health";
+    if (!isHealthCheck && rateLimiter) {
+      const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && url.pathname.startsWith("/api/");
+      const limit = isMutation ? rateLimiter.mutationMax : rateLimiter.max;
+      const rateStatus = rateLimiter.isAllowed(clientIp, limit);
+
+      response.setHeader("X-RateLimit-Limit", String(limit));
+      response.setHeader("X-RateLimit-Remaining", String(rateStatus.remaining));
+      response.setHeader("X-RateLimit-Reset", String(Math.ceil(rateStatus.resetTime / 1000)));
+
+      if (!rateStatus.allowed) {
+        const retryAfter = Math.max(1, Math.ceil((rateStatus.resetTime - Date.now()) / 1000));
+        response.writeHead(429, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": String(retryAfter),
+          "X-RateLimit-Limit": String(limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(rateStatus.resetTime / 1000)),
+          "Cache-Control": "no-store",
+        });
+        response.end(JSON.stringify({ error: "Too many requests. Please slow down and try again shortly." }));
+        return;
+      }
+    }
     try {
       auth.cleanup();
       if (request.method === "GET" && url.pathname === "/api/auth/session") {

@@ -94,6 +94,7 @@ const loadSaved = () => {
 };
 
 let savedVehicles = loadSaved();
+let activeClass = "all";
 let activeMake = "all";
 let activeType = "all";
 const PRICE_RANGE_MIN = 0;
@@ -111,6 +112,7 @@ const inventoryScrollKey = "tristar-inventory-scroll-y";
 
 function restoreInventoryState() {
   const params = new URLSearchParams(location.search);
+  activeClass = params.get("class") || "all";
   activeType = params.get("type") || "all";
   activePriceMin = Math.min(PRICE_RANGE_MAX, Math.max(PRICE_RANGE_MIN, Number(params.get("minPrice")) || PRICE_RANGE_MIN));
   activePriceMax = Math.min(PRICE_RANGE_MAX, Math.max(activePriceMin + PRICE_RANGE_STEP, Number(params.get("maxPrice")) || PRICE_RANGE_MAX));
@@ -121,7 +123,7 @@ function restoreInventoryState() {
 
 function syncInventoryUrl() {
   const url = new URL(location.href);
-  const values = { type: activeType, sort: activeSort, page: currentPage };
+  const values = { class: activeClass, type: activeType, sort: activeSort, page: currentPage };
   Object.entries(values).forEach(([key, value]) => {
     if (value && value !== "all" && value !== "featured" && !(key === "page" && value === 1)) url.searchParams.set(key, value);
     else url.searchParams.delete(key);
@@ -204,13 +206,14 @@ function renderVehicles() {
 
   // Filter Logic
   let results = vehicles.filter((car) => {
+    const matchClass = activeClass === "all" || car.class === activeClass;
     const matchMake = activeMake === "all" || car.make === activeMake;
     const matchType = activeType === "all" || car.type === activeType;
     const matchFuel = activeFuel === "all" || car.fuel === activeFuel;
 
     const matchBudget = car.price >= activePriceMin && car.price <= activePriceMax;
     const matchSaved = !savedOnly || savedVehicles.has(car.id);
-    return matchMake && matchType && matchFuel && matchBudget && matchSaved;
+    return matchClass && matchMake && matchType && matchFuel && matchBudget && matchSaved;
   });
 
   // Sort Logic
@@ -381,8 +384,10 @@ function setupHome() {
   if (minPriceInput) minPriceInput.value = String(activePriceMin);
   if (maxPriceInput) maxPriceInput.value = String(activePriceMax);
   updatePriceRangeDisplay();
+  syncClassChips(activeClass);
   syncTypeFilters(activeType);
   renderVehicles();
+  updateDynamicCounts();
   updateSavedCount();
 
   const navigationType = performance.getEntriesByType("navigation")[0]?.type;
@@ -446,6 +451,17 @@ function setupHome() {
     });
   });
 
+  // Mercedes Class Chips
+  document.querySelectorAll(".class-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      activeClass = activeClass === chip.dataset.class ? "all" : chip.dataset.class;
+      savedOnly = false;
+      currentPage = 1;
+      syncClassChips(activeClass);
+      renderVehicles();
+    });
+  });
+
   document.querySelectorAll(".quick-type-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       activeType = activeType === chip.dataset.type ? "all" : chip.dataset.type;
@@ -465,6 +481,7 @@ function setupHome() {
 
   // Clear Filters
   document.querySelector("#clear-filters")?.addEventListener("click", () => {
+    activeClass = "all";
     activeMake = "all";
     activeType = "all";
     activePriceMin = PRICE_RANGE_MIN;
@@ -481,6 +498,7 @@ function setupHome() {
     if (document.querySelector("#fuel-filter")) document.querySelector("#fuel-filter").value = "all";
     if (document.querySelector("#sort-select")) document.querySelector("#sort-select").value = "featured";
 
+    syncClassChips("all");
     syncMakeChips("all");
     syncTypeFilters("all");
     renderVehicles();
@@ -514,6 +532,14 @@ function setupHome() {
 function syncMakeChips(make) {
   document.querySelectorAll(".brand-chip").forEach((chip) => {
     chip.classList.toggle("selected", chip.dataset.make === make);
+  });
+}
+
+function syncClassChips(currentClass) {
+  document.querySelectorAll(".class-chip").forEach((chip) => {
+    const active = chip.dataset.class === currentClass;
+    chip.classList.toggle("active", active);
+    chip.setAttribute("aria-pressed", String(active));
   });
 }
 
@@ -642,6 +668,7 @@ function setupVehiclePage() {
   setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
   setText("detail-condition", car.condition || "Duty Paid · Verified Provenance");
   setText("detail-price", money(car.price));
+  setText("detail-description", car.description || "Immaculate pre-owned Mercedes-Benz with verified provenance, complete duty-paid documentation, and available for physical inspection at our Upper Hill showroom.");
 
   // Technical Specs
   setText("detail-chassis", car.chassis || "Mercedes-Benz");
@@ -869,6 +896,21 @@ async function init() {
   setupVehiclePage();
   setupNavigation();
   setupScrollEffects();
+
+  // Prevent right-click "Save image as" on all dealership photos
+  document.addEventListener("contextmenu", (e) => {
+    if (e.target.closest(".car-image-wrap, .detail-image-wrap, .detail-thumbnails")) {
+      e.preventDefault();
+    }
+  });
+
+  // Prevent drag-to-desktop on dealership photos
+  document.addEventListener("dragstart", (e) => {
+    if (e.target.tagName === "IMG" &&
+        e.target.closest(".car-image-wrap, .detail-image-wrap, .detail-thumbnails")) {
+      e.preventDefault();
+    }
+  });
 }
 
 if (document.readyState === "loading") {

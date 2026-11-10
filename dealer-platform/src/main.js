@@ -1,7 +1,7 @@
 import { dealer, money, number } from "./data.js";
 import { readStore, writeStore, resetDemoStore } from "./store.js";
 import { mount360Viewer } from "./viewer.js";
-import encodeWebP, { init as initWebP } from "@jsquash/webp/encode";
+import encodeWebP, { init as initWebP } from "@jsquash/webp/encode.js";
 import webpEncoderWasmUrl from "@jsquash/webp/codec/enc/webp_enc.wasm?url";
 import webpEncoderSimdWasmUrl from "@jsquash/webp/codec/enc/webp_enc_simd.wasm?url";
 import "./styles.css";
