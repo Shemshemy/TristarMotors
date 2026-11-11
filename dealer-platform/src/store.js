@@ -1,7 +1,5 @@
-import { starterCars } from "./data.js";
-
 const KEY = "tristar-platform-v1";
-const initialState = () => ({ cars: structuredClone(starterCars), leads: [], favorites: [] });
+const initialState = () => ({ cars: [], leads: [], favorites: [] });
 
 export function readStore() {
   try {

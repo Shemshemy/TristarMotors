@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 export class RateLimiter {
   constructor({
     windowMs = 60 * 1000,
@@ -48,11 +50,10 @@ export class RateLimiter {
 }
 
 export function getClientIp(request) {
-  const forwarded = request.headers["x-forwarded-for"];
-  if (forwarded && typeof forwarded === "string") {
-    const client = forwarded.split(",")[0].trim();
-    if (client) return client;
-  }
+  // Render's edge sets CF-Connecting-IP to the visitor address. Do not trust
+  // arbitrary X-Forwarded-For values, which clients can supply themselves.
+  const forwarded = request.headers["cf-connecting-ip"];
+  if (typeof forwarded === "string" && isIP(forwarded.trim())) return forwarded.trim();
   return request.socket.remoteAddress || "127.0.0.1";
 }
 

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCK_MS = 5 * 60 * 1000;
 
@@ -95,14 +95,19 @@ export class AdminAuth {
   loginAllowed(address) {
     const attempt = this.loginAttempts.get(address);
     if (!attempt) return true;
-    if (attempt.lockedUntil > Date.now()) return false;
-    if (attempt.lockedUntil) this.loginAttempts.delete(address);
+    const now = Date.now();
+    if (attempt.lockedUntil > now) return false;
+    if ((attempt.lockedUntil && attempt.lockedUntil <= now) ||
+        (attempt.lastAttemptAt && now - attempt.lastAttemptAt >= LOGIN_LOCK_MS)) {
+      this.loginAttempts.delete(address);
+    }
     return true;
   }
 
   recordFailedLogin(address) {
     const attempt = this.loginAttempts.get(address) || { count: 0 };
     attempt.count += 1;
+    attempt.lastAttemptAt = Date.now();
     if (attempt.count >= MAX_LOGIN_ATTEMPTS) {
       attempt.count = 0;
       attempt.lockedUntil = Date.now() + LOGIN_LOCK_MS;
@@ -116,12 +121,12 @@ export class AdminAuth {
     this.sessions.set(hashToken(token), expiresAt);
     response.setHeader(
       "Set-Cookie",
-      `tristar_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_MS / 1000}`,
+      `__Host-tristar_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_MS / 1000}`,
     );
   }
 
   isAuthenticated(request) {
-    const token = readCookie(request, "tristar_admin");
+    const token = readCookie(request, "__Host-tristar_admin");
     if (!token) return false;
     const tokenHash = hashToken(token);
     const expiresAt = this.sessions.get(tokenHash);
@@ -133,15 +138,21 @@ export class AdminAuth {
   }
 
   destroySession(request, response) {
-    const token = readCookie(request, "tristar_admin");
+    const token = readCookie(request, "__Host-tristar_admin");
     if (token) this.sessions.delete(hashToken(token));
-    response.setHeader("Set-Cookie", "tristar_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+    response.setHeader("Set-Cookie", "__Host-tristar_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
   }
 
   cleanup() {
     const now = Date.now();
     for (const [token, expiresAt] of this.sessions) {
       if (expiresAt <= now) this.sessions.delete(token);
+    }
+    for (const [address, attempt] of this.loginAttempts) {
+      if ((attempt.lockedUntil && attempt.lockedUntil <= now) ||
+          (attempt.lastAttemptAt && now - attempt.lastAttemptAt >= LOGIN_LOCK_MS)) {
+        this.loginAttempts.delete(address);
+      }
     }
   }
 }

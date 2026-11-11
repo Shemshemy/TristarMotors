@@ -22,9 +22,7 @@ async function loadVehicles() {
     if (!response.ok) throw new Error("Inventory service is unavailable.");
     cars = await response.json();
   } catch {
-    const response = await fetch("/inventory-seed.json");
-    if (!response.ok) throw new Error("Could not load vehicle listings.");
-    cars = await response.json();
+    throw new Error("Could not load vehicle listings.");
   }
   inventoryUnavailable = false;
   vehicles = cars
@@ -260,7 +258,7 @@ function renderVehicles() {
     return `
       <article class="car-card" data-id="${escapeHTML(car.id)}">
         <a class="car-image-wrap" href="/cars/${encodeURIComponent(car.id)}" aria-label="View ${escapeHTML(car.year)} ${escapeHTML(car.make)} ${escapeHTML(car.model)}">
-          <img class="car-image" src="${escapeHTML(car.image)}" alt="${escapeHTML(`${car.year} ${car.make} ${car.model} exterior`)}" loading="lazy">
+          <img class="car-image" src="${escapeHTML(car.image)}" alt="${escapeHTML(`${car.year} ${car.make} ${car.model} exterior`)}" loading="lazy" draggable="false">
           <span class="car-badge ${car.status === "Sold" ? "car-badge-sold" : car.status === "Pending" ? "car-badge-pending" : ""}">${escapeHTML(car.badge)}</span>
           <span class="car-condition-tag">${escapeHTML(car.chassis)}</span>
         </a>
@@ -727,13 +725,14 @@ function setupVehiclePage() {
   if (mainImage) {
     mainImage.src = galleryImages[0];
     mainImage.alt = `${car.year} Mercedes-Benz ${car.model} exterior`;
+    mainImage.draggable = false;
   }
 
   const thumbContainer = document.getElementById("detail-thumbs");
   if (thumbContainer && galleryImages.length > 0) {
     thumbContainer.innerHTML = galleryImages.map((imgUrl, i) => `
       <button class="thumb-btn ${i === 0 ? "active" : ""}" type="button" data-index="${i}" aria-label="Angle ${i + 1}" aria-current="${i === 0 ? "true" : "false"}">
-        <img src="${imgUrl}" alt="${car.year} Mercedes-Benz ${car.model} photo ${i + 1}" loading="lazy">
+        <img src="${imgUrl}" alt="${car.year} Mercedes-Benz ${car.model} photo ${i + 1}" loading="lazy" draggable="false">
       </button>
     `).join("");
 
@@ -830,7 +829,7 @@ function setupVehiclePage() {
       return `
       <article class="car-card">
         <a class="car-image-wrap" href="/cars/${encodeURIComponent(r.id)}">
-          <img class="car-image" src="${r.image}" alt="${r.model}" loading="lazy">
+          <img class="car-image" src="${r.image}" alt="${r.model}" loading="lazy" draggable="false">
           <span class="car-badge">${r.badge}</span>
         </a>
         <div class="car-info">

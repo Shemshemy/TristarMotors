@@ -523,15 +523,17 @@ h1 em, h2 em, h3 em {
    ========================================================================== */
 .hero {
   position: relative;
-  height: min(780px, 90vh);
-  min-height: 620px;
+  height: clamp(600px, 82vh, 760px);
+  height: clamp(600px, 82svh, 760px);
+  min-height: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   isolation: isolate;
   background: #14171c;
   color: #ffffff;
-  padding-bottom: 60px;
+  padding: 40px 0 60px;
 }
 
 .hero-photo, .hero-shade {
@@ -1125,7 +1127,7 @@ h1 em, h2 em, h3 em {
   box-shadow: var(--shadow-hover);
 }
 
-/* Image wrapper with protection against unauthorized downloads */
+/* Discourage casual image saving; public images remain fetchable by browsers. */
 .car-image-wrap {
   position: relative;
   aspect-ratio: 16 / 10;
@@ -1492,14 +1494,14 @@ h1 em, h2 em, h3 em {
    ========================================================================== */
 .experience-section {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   background: #f1f1ee;
   overflow: hidden;
 }
 
 .experience-image {
   position: relative;
-  min-height: 580px;
+  min-height: clamp(380px, 42vw, 580px);
   overflow: hidden;
 }
 
@@ -1599,7 +1601,7 @@ h1 em, h2 em, h3 em {
    ========================================================================== */
 .feature-banner {
   position: relative;
-  height: 440px;
+  min-height: clamp(380px, 34vw, 440px);
   margin: 96px auto;
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -1988,14 +1990,14 @@ body:has(#vehicle-detail) em {
 
 .detail-layout {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: clamp(32px, 5vw, 64px);
   align-items: start;
 }
 
 .detail-support-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: clamp(32px, 5vw, 64px);
   align-items: start;
   margin-top: 28px;
@@ -2591,7 +2593,7 @@ body:has(#vehicle-detail) em {
     grid-template-columns: 1fr;
   }
   .experience-image {
-    min-height: 380px;
+    min-height: clamp(320px, 48vw, 420px);
   }
   .footer-main {
     grid-template-columns: 1fr 1fr;
@@ -2716,8 +2718,9 @@ body:has(#vehicle-detail) em {
 
   .hero {
     height: auto;
-    min-height: 520px;
-    padding: 90px 0 60px;
+    min-height: min(680px, 100svh);
+    padding: 96px 0 48px;
+    justify-content: center;
   }
 
   .hero-content {
@@ -2858,7 +2861,7 @@ body:has(#vehicle-detail) em {
 
   .feature-banner {
     height: auto;
-    min-height: 420px;
+    min-height: clamp(380px, 100svh, 520px);
     padding: 48px 24px;
     margin: 64px auto;
   }
@@ -3105,6 +3108,7 @@ body:has(#vehicle-detail) em {
   .hero-content {
     width: auto;
     max-width: none;
+    padding-top: 0;
     margin-right: 16px;
     margin-left: 16px;
   }

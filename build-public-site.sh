@@ -4,7 +4,7 @@ set -eu
 output_dir="public-site-dist"
 rm -rf "$output_dir"
 mkdir -p "$output_dir"
-cp index.html site.css site.js vehicle.html favicon.ico favicon.svg inventory-seed.json "$output_dir/"
+cp index.html site.css site.js vehicle.html favicon.ico favicon.svg "$output_dir/"
 mkdir -p "$output_dir/images/cars" "$output_dir/images/body-types" "$output_dir/Logos"
 cp -R images/cars/. "$output_dir/images/cars/"
 for image in suv.webp sedan.webp coupe.webp roadster.webp wagon.webp; do

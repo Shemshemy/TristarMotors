@@ -54,6 +54,7 @@ test("serves seeded vehicles and persists a sold status across database reopen",
   const response = await fetch(`${baseUrl}/api/cars`);
   assert.equal(response.status, 200);
   const cars = await response.json();
+  assert.ok(cars.every((car) => !Object.hasOwn(car, "vin")), "public inventory must not expose vehicle VINs");
   assert.ok(cars.some((car) => car.id === "c180-avantgarde-2014" && car.status === "In Stock"));
   assert.ok(cars.every((car) => car.fuel !== "Gasoline"));
   assert.equal(cars.find((car) => car.id === "c180-avantgarde-2014").fuel, "Petrol");
@@ -188,6 +189,24 @@ test("requires Allan's login before changing inventory and returns a strict Http
   await login();
 });
 
+test("uses the forwarded client IP for independent administrator login lockouts", async () => {
+  const requestLogin = (ip, password, spoofedForwardedFor = "203.0.113.250") => fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": ip,
+      "X-Forwarded-For": spoofedForwardedFor,
+    },
+    body: JSON.stringify({ username: "Allan", password }),
+  });
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    assert.equal((await requestLogin("198.51.100.10", "wrong-password", `198.51.100.${attempt + 20}`)).status, 401);
+  }
+  assert.equal((await requestLogin("198.51.100.10", "wrong-password")).status, 429);
+  assert.equal((await requestLogin("198.51.100.11", "local-test-password-strong-enough")).status, 200);
+});
+
 test("converts uploads to safe categorized WebP paths and rejects untrusted input", async () => {
   const candidatePaths = [
     new URL("../public/images/brand/avatar.webp", import.meta.url),
@@ -311,12 +330,17 @@ test("serves the production storefront and persistent uploads without swallowing
     const home = await fetch(url);
     assert.equal(home.status, 200);
     assert.match(await home.text(), /Tristar storefront/);
+    assert.match(home.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+    assert.equal(home.headers.get("x-content-type-options"), "nosniff");
 
     const route = await fetch(`${url}/cars/c180-avantgarde-2014`);
     assert.equal(route.status, 200);
     const routeHtml = await route.text();
     assert.match(routeHtml, /2014 Mercedes-Benz C180/);
     assert.match(routeHtml, /footer-brand/);
+    const cspNonce = route.headers.get("content-security-policy").match(/'nonce-([^']+)'/)?.[1];
+    assert.ok(cspNonce, "vehicle JSON-LD should use a CSP nonce");
+    assert.ok(routeHtml.includes(`<script nonce="${cspNonce}" type="application/ld+json">`));
 
     const asset = await fetch(`${url}/assets/app.js`);
     assert.equal(asset.headers.get("content-type"), "text/javascript; charset=utf-8");

@@ -11,6 +11,8 @@ services:
         value: production
       - key: TRISTAR_DATA_DIR
         value: /var/data
+      - key: TRISTAR_SITE_URL
+        value: https://tristarmotors.co.ke
       - key: TRISTAR_ADMIN_PASSWORD
         generateValue: true
     disk:

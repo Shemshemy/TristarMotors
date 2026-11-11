@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
@@ -35,9 +35,42 @@ const allowedFields = new Set([
   "condition", "description", "features", "badge",
 ]);
 
+const PUBLIC_CAR_FIELDS = new Set([
+  "id", "year", "make", "model", "trim", "body", "price", "mileage", "transmission",
+  "engine", "fuel", "status", "badges", "image", "gallery", "galleryByCategory", "frames", "frameBase",
+  "class", "type", "chassis", "drivetrain", "power", "acceleration", "color", "interior",
+  "condition", "description", "features", "badge",
+]);
+
+function publicCar(car) {
+  return Object.fromEntries(Object.entries(car).filter(([field]) => PUBLIC_CAR_FIELDS.has(field)));
+}
+
 function send(response, status, value) {
   response.writeHead(status, JSON_HEADERS);
   response.end(JSON.stringify(value));
+}
+
+function setSecurityHeaders(response, nonce) {
+  response.setHeader("Content-Security-Policy", [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    `script-src 'self' 'wasm-unsafe-eval' 'nonce-${nonce}'`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self'",
+  ].join("; "));
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "DENY");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (process.env.NODE_ENV === "production") {
+    response.setHeader("Strict-Transport-Security", "max-age=31536000");
+  }
 }
 
 async function readJson(request, maxBodyBytes = MAX_BODY_BYTES) {
@@ -157,16 +190,19 @@ export function createInventoryApi(inventory, {
   rateLimiter = new RateLimiter(),
 } = {}) {
   const auth = new AdminAuth(adminPassword, { passwordFilePath });
-  const configuredSiteUrl = process.env.TRISTAR_SITE_URL?.replace(/\/$/, "");
+  const configuredSiteUrl = process.env.TRISTAR_SITE_URL || process.env.RENDER_EXTERNAL_URL ||
+    (process.env.NODE_ENV === "production" ? "https://tristarmotors.co.ke" : "");
   const siteOrigin = (request) => {
-    if (configuredSiteUrl) return configuredSiteUrl;
+    if (configuredSiteUrl) {
+      try { return new URL(configuredSiteUrl).origin; } catch { return "https://tristarmotors.co.ke"; }
+    }
     const host = request.headers.host;
     if (!host || !/^[a-z0-9.-]+(?::\d{1,5})?$/i.test(host)) return "https://tristarmotors.co.ke";
     return `${request.headers["x-forwarded-proto"] === "https" ? "https" : "http"}://${host}`;
   };
   const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const jsonForHtml = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
-  const vehiclePage = async (request, response, car, origin) => {
+  const vehiclePage = async (request, response, car, origin, nonce) => {
     const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} for Sale in Nairobi | Tristar Motors`;
     const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi for KSh ${Number(car.price).toLocaleString("en-KE")}. ${Number(car.mileage).toLocaleString("en-KE")} km, ${car.status === "In Stock" ? "available" : String(car.status).toLowerCase()}. Contact Tristar Motors to arrange a viewing.`;
     const canonical = `${origin}/cars/${encodeURIComponent(car.id)}`;
@@ -178,7 +214,7 @@ export function createInventoryApi(inventory, {
     };
     const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
     const template = await readFile(htmlPath, "utf8");
-    const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(car.image, origin).href)}"><meta property="og:type" content="product"><script type="application/ld+json">${jsonForHtml(item)}</script>`;
+    const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(car.image, origin).href)}"><meta property="og:type" content="product"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(item)}</script>`;
     const summary = `<section class="seo-vehicle-summary"><h1>${esc(title)}</h1><p>${esc(description)}</p><p>Price: KSh ${Number(car.price).toLocaleString("en-KE")} · Mileage: ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.transmission || "")}</p><img src="${esc(new URL(car.image, origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" width="800"><a href="https://wa.me/254734490475">Ask Tristar Motors about this vehicle</a></section>`;
     const html = template.replace(/<title>.*?<\/title>/i, `<title>${esc(title)}</title>`)
       .replace(/<meta name="description"[^>]*>/i, "")
@@ -201,7 +237,9 @@ export function createInventoryApi(inventory, {
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
     response.end(request.method === "HEAD" ? undefined : html);
   };
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
+    const nonce = randomBytes(18).toString("base64");
+    setSecurityHeaders(response, nonce);
     if (!allowRemote && !isLoopback(request.socket.remoteAddress)) {
       send(response, 403, { error: "This local prototype is only available from this computer" });
       return;
@@ -253,7 +291,7 @@ export function createInventoryApi(inventory, {
           send(response, 503, { error: "Set TRISTAR_ADMIN_PASSWORD to a password of at least 12 characters, then restart the app" });
           return;
         }
-        const address = request.socket.remoteAddress || "unknown";
+        const address = getClientIp(request);
         if (!auth.loginAllowed(address)) {
           send(response, 429, { error: "Too many sign-in attempts. Try again in five minutes." });
           return;
@@ -280,7 +318,10 @@ export function createInventoryApi(inventory, {
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/cars") {
-        send(response, 200, inventory.list());
+        const cars = inventory.list();
+        send(response, 200, auth.isAuthenticated(request)
+          ? cars
+          : cars.map(publicCar));
         return;
       }
       if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && url.pathname === "/robots.txt") {
@@ -310,7 +351,7 @@ export function createInventoryApi(inventory, {
           response.end("Vehicle not found");
           return;
         }
-        await vehiclePage(request, response, car, siteOrigin(request));
+        await vehiclePage(request, response, car, siteOrigin(request), nonce);
         return;
       }
       if (staticDirectory && !url.pathname.startsWith("/api") &&
@@ -461,4 +502,8 @@ export function createInventoryApi(inventory, {
       if (!error.status) console.error("Inventory API error:", error);
     }
   });
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
+  return server;
 }
