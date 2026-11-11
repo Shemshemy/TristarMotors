@@ -545,7 +545,7 @@ h1 em, h2 em, h3 em {
   background-image: url('images/cars/g350d_front.jpg');
   background-position: center 54%;
   background-size: cover;
-  transform: scale(1.02);
+  background-attachment: fixed;
   z-index: 0;
 }
 
@@ -2344,6 +2344,10 @@ body:has(#vehicle-detail) em {
   box-shadow: 0 7px 18px rgba(13, 15, 18, 0.12);
 }
 
+.detail-cta #detail-email {
+  flex: 1 1 100%;
+}
+
 .detail-cta .button svg {
   flex: 0 0 18px;
 }
@@ -2941,6 +2945,10 @@ body:has(#vehicle-detail) em {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 6px 20px rgba(13, 15, 18, .18);
+  }
+
+  body.vehicle-sticky-visible .mobile-detail-back {
+    bottom: 132px;
   }
 
   .mobile-detail-back svg {

@@ -682,9 +682,8 @@ function setupVehiclePage() {
   setText("sticky-price", money(car.price));
 
   const stickyBar = document.querySelector(".mobile-sticky-bar");
-  const priceCard = document.querySelector(".detail-price-box");
-  const footer = document.querySelector(".site-footer");
-  let footerInView = false;
+  const relatedSection = document.querySelector("#related-cars");
+  let relatedSectionInView = false;
   const setStickyVisible = (visible) => {
     if (!stickyBar) return;
     stickyBar.classList.toggle("is-visible", visible);
@@ -694,28 +693,18 @@ function setupVehiclePage() {
   };
   const updateStickyVisibility = () => {
     const mobile = window.matchMedia("(max-width: 768px)").matches;
-    if (!("IntersectionObserver" in window) && footer) {
-      footerInView = footer.getBoundingClientRect().top < window.innerHeight;
-    }
-    setStickyVisible(Boolean(mobile && !footerInView && priceCard && priceCard.getBoundingClientRect().bottom < 0));
+    setStickyVisible(mobile && !relatedSectionInView);
   };
-  if (stickyBar && priceCard) {
-    if ("IntersectionObserver" in window) {
-      const priceObserver = new IntersectionObserver(updateStickyVisibility);
-      priceObserver.observe(priceCard);
-      if (footer) {
-        const footerObserver = new IntersectionObserver(([entry]) => {
-          footerInView = entry.isIntersecting;
-          updateStickyVisibility();
-        });
-        footerObserver.observe(footer);
-      }
-      window.addEventListener("resize", updateStickyVisibility, { passive: true });
-    } else {
-      window.addEventListener("scroll", updateStickyVisibility, { passive: true });
-      window.addEventListener("resize", updateStickyVisibility, { passive: true });
-      updateStickyVisibility();
+  if (stickyBar) {
+    window.addEventListener("resize", updateStickyVisibility, { passive: true });
+    if (relatedSection && "IntersectionObserver" in window) {
+      const relatedObserver = new IntersectionObserver(([entry]) => {
+        relatedSectionInView = entry.isIntersecting;
+        updateStickyVisibility();
+      });
+      relatedObserver.observe(relatedSection);
     }
+    updateStickyVisibility();
   }
 
   // Gallery
@@ -786,14 +775,8 @@ function setupVehiclePage() {
   const waMessage = `Hello Tristar Motors, I am asking about the ${car.year} Mercedes-Benz ${car.model}. Is it still available, and when can I view it?`;
   const waUrl = getWhatsAppUrl(waMessage);
 
-  const waBtn = document.getElementById("detail-wa");
-  if (waBtn) waBtn.href = waUrl;
-
   const stickyWaBtn = document.getElementById("sticky-wa");
   if (stickyWaBtn) stickyWaBtn.href = waUrl;
-
-  const callBtn = document.getElementById("detail-call");
-  if (callBtn) callBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
 
   const stickyCallBtn = document.getElementById("sticky-call");
   if (stickyCallBtn) stickyCallBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
@@ -822,7 +805,14 @@ function setupVehiclePage() {
   // Related Mercedes-Benz vehicles in stock.
   const relatedGrid = document.getElementById("related-grid");
   if (relatedGrid) {
-    const related = vehicles.filter((v) => v.id !== car.id).slice(0, 3);
+    const candidates = vehicles.filter((v) => v.id !== car.id && v.status === "In Stock");
+    const related = candidates.sort((a, b) => {
+      const bodyMatchA = a.type === car.type ? 0 : 1;
+      const bodyMatchB = b.type === car.type ? 0 : 1;
+      const priceDistanceA = Math.abs(Number(a.price) - Number(car.price)) / Math.max(Number(car.price), 1);
+      const priceDistanceB = Math.abs(Number(b.price) - Number(car.price)) / Math.max(Number(car.price), 1);
+      return bodyMatchA - bodyMatchB || priceDistanceA - priceDistanceB || Math.abs(Number(a.year) - Number(car.year)) - Math.abs(Number(b.year) - Number(car.year));
+    }).slice(0, 3);
     relatedGrid.innerHTML = related.map((r) => {
       const relatedWaText = `Hello Tristar Motors, I am interested in the ${r.year} Mercedes-Benz ${r.model}. Is it available to view?`;
       const relatedWaUrl = getWhatsAppUrl(relatedWaText);
