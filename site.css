@@ -2003,6 +2003,13 @@ body:has(#vehicle-detail) em {
   margin-top: 28px;
 }
 
+.detail-support-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
 /* Gallery */
 .detail-gallery {
   display: flex;
@@ -2198,7 +2205,7 @@ body:has(#vehicle-detail) em {
 }
 
 .cash-deal-card {
-  margin-top: 20px;
+  margin-top: 0;
   padding: 18px 20px;
   background: linear-gradient(135deg, rgba(197, 160, 89, 0.08), rgba(246, 247, 249, 0.8));
   border: 1px solid rgba(197, 160, 89, 0.35);
@@ -2233,12 +2240,6 @@ body:has(#vehicle-detail) em {
 
 .cash-deal-list strong {
   color: var(--ink);
-}
-
-.detail-features-column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .inspection-card {
@@ -2975,6 +2976,10 @@ body:has(#vehicle-detail) em {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     margin-top: 16px;
+  }
+
+  .detail-support-column {
+    gap: 14px;
   }
 
   .detail-summary {

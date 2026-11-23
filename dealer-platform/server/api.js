@@ -96,7 +96,7 @@ function validateCar(value, id) {
   }
   const car = { ...value, id, status: value.status || "In Stock" };
   if (!INVENTORY_STATUSES.includes(car.status)) return "Status must be In Stock, Pending, or Sold";
-  if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1980 || Number(car.year) > 2035) return "Year must be between 1980 and 2035";
+  if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1886 || Number(car.year) > 2035) return "Year must be between 1886 and 2035";
   if (!String(car.make || "").trim() || !String(car.model || "").trim()) return "Make and model are required";
   if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) <= 0)) {
     return "Price must be a positive number or null";
