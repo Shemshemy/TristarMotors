@@ -6413,6 +6413,22 @@ body,.app-home {
   padding: 14px 0;
 }
 
+.car-form-error {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #e1aaa4;
+  border-radius: 9px;
+  background: #fff1ef;
+  color: #8d3027;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.car-form-error[hidden] {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .price-entry-controls {
     grid-template-columns: minmax(0, 1fr) minmax(112px, .85fr);
