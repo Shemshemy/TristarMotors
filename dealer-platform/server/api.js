@@ -229,6 +229,8 @@ export function createInventoryApi(inventory, {
   const homePage = async (request, response) => {
     const filePath = staticFilePath(staticDirectory, "/index.html");
     let html = await readFile(filePath, "utf8");
+    const canonical = `${siteOrigin(request)}/`;
+    html = html.replace("</head>", `<link rel="canonical" href="${esc(canonical)}"></head>`);
     const cars = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
@@ -341,6 +343,11 @@ export function createInventoryApi(inventory, {
         return;
       }
       if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && ["/", "/index.html"].includes(url.pathname)) {
+        if (url.pathname === "/index.html") {
+          response.writeHead(308, { Location: `/${url.search}`, "Cache-Control": "public, max-age=86400" });
+          response.end();
+          return;
+        }
         await homePage(request, response);
         return;
       }

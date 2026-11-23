@@ -648,7 +648,7 @@ function setupVehiclePage() {
   const carId = decodeURIComponent(location.pathname.match(/^\/cars\/([^/]+)$/)?.[1] || params.get("car") || "");
   const car = carId ? vehicles.find((v) => v.id === carId) : vehicles[0];
   if (!car) {
-    detail.innerHTML = `<div class="empty-state"><h1>Vehicle not found</h1><p>This vehicle may no longer be in our collection.</p><a class="button button-dark" href="index.html#inventory">Browse the collection</a></div>`;
+    detail.innerHTML = `<div class="empty-state"><h1>Vehicle not found</h1><p>This vehicle may no longer be in our collection.</p><a class="button button-dark" href="/#inventory">Browse the collection</a></div>`;
     return;
   }
 
