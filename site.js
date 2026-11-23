@@ -39,6 +39,7 @@ async function loadVehicles() {
         badge: car.status === "In Stock" ? (car.badge || car.badges?.[0] || "Available") : car.status,
         chassis: car.chassis || car.class || "Mercedes-Benz",
         features: Array.isArray(car.features) ? car.features : [],
+        inspectionPoints: Array.isArray(car.inspectionPoints) ? car.inspectionPoints : [],
       };
     });
 }
@@ -766,9 +767,39 @@ function setupVehiclePage() {
     featuresList.innerHTML = car.features.map((f) => `
       <li>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>${f}</span>
+        <span>${escapeHTML(f)}</span>
       </li>
     `).join("");
+  }
+
+  // Dynamic Inspection Guarantee Checkpoints
+  const inspectionHeading = document.getElementById("detail-inspection-heading");
+  const inspectionList = document.getElementById("detail-inspections");
+  const defaultInspectionPoints = [
+    "Accident-Free: Original factory chassis alignment, zero structural repairs",
+    "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
+    "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
+    "Verified Odometer: Documented mileage and clean title certificate",
+    "Physical Inspection: Inspect and test drive at our Masaba Road yard",
+  ];
+  const points = (Array.isArray(car.inspectionPoints) && car.inspectionPoints.length > 0)
+    ? car.inspectionPoints
+    : defaultInspectionPoints;
+  if (inspectionHeading) {
+    inspectionHeading.textContent = `${points.length}-Point Inspection Guarantee`;
+  }
+  if (inspectionList) {
+    inspectionList.innerHTML = points.map((p) => {
+      const colonIdx = p.indexOf(":");
+      const title = colonIdx > -1 ? p.slice(0, colonIdx) : p;
+      const desc = colonIdx > -1 ? p.slice(colonIdx + 1).trim() : "";
+      return `
+        <li>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><strong>${escapeHTML(title)}:</strong> ${escapeHTML(desc)}</div>
+        </li>
+      `;
+    }).join("");
   }
 
   // Direct WhatsApp & Phone CTAs for Cash Deal

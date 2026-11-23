@@ -32,14 +32,14 @@ const allowedFields = new Set([
   "id", "year", "make", "model", "trim", "body", "price", "mileage", "transmission",
   "engine", "fuel", "vin", "status", "badges", "image", "gallery", "galleryByCategory", "frames", "frameBase",
   "class", "type", "chassis", "drivetrain", "power", "acceleration", "color", "interior",
-  "condition", "description", "features", "badge",
+  "condition", "description", "features", "badge", "inspectionPoints",
 ]);
 
 const PUBLIC_CAR_FIELDS = new Set([
   "id", "year", "make", "model", "trim", "body", "price", "mileage", "transmission",
   "engine", "fuel", "status", "badges", "image", "gallery", "galleryByCategory", "frames", "frameBase",
   "class", "type", "chassis", "drivetrain", "power", "acceleration", "color", "interior",
-  "condition", "description", "features", "badge",
+  "condition", "description", "features", "badge", "inspectionPoints",
 ]);
 
 function publicCar(car) {
@@ -102,8 +102,11 @@ function validateCar(value, id) {
     return "Price must be a positive number or null";
   }
   if (!Number.isFinite(Number(car.mileage)) || Number(car.mileage) < 0) return "Mileage must be zero or greater";
-  for (const field of ["badges", "gallery", "frames", "features"]) {
+  for (const field of ["badges", "gallery", "frames", "features", "inspectionPoints"]) {
     if (car[field] !== undefined && !Array.isArray(car[field])) return `${field} must be an array`;
+  }
+  if (car.inspectionPoints !== undefined && car.inspectionPoints.some((p) => typeof p !== "string" || p.length > 500)) {
+    return "inspectionPoints must contain valid strings";
   }
   if (car.galleryByCategory !== undefined) {
     if (!car.galleryByCategory || typeof car.galleryByCategory !== "object" || Array.isArray(car.galleryByCategory)) {

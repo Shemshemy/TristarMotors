@@ -94,6 +94,7 @@ test("creates, updates, and deletes inventory records", async () => {
   const vehicle = {
     id: "test-roadster", year: 2024, make: "Test", model: "Roadster",
     price: 25000, mileage: 20, fuel: "Gasoline", status: "In Stock", badges: [], gallery: [], frames: [],
+    inspectionPoints: ["Accident-Free: Passed", "Diagnostics: Clear"],
   };
   const created = await adminFetch("/api/cars", {
     method: "POST",
@@ -101,15 +102,19 @@ test("creates, updates, and deletes inventory records", async () => {
     body: JSON.stringify(vehicle),
   });
   assert.equal(created.status, 201);
-  assert.equal((await created.json()).fuel, "Petrol");
+  const createdJson = await created.json();
+  assert.equal(createdJson.fuel, "Petrol");
+  assert.deepEqual(createdJson.inspectionPoints, ["Accident-Free: Passed", "Diagnostics: Clear"]);
 
   const updated = await adminFetch("/api/cars/test-roadster", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...vehicle, status: "Pending" }),
+    body: JSON.stringify({ ...vehicle, status: "Pending", inspectionPoints: ["Accident-Free: Passed"] }),
   });
 
-  assert.equal((await updated.json()).status, "Pending");
+  const updatedJson = await updated.json();
+  assert.equal(updatedJson.status, "Pending");
+  assert.deepEqual(updatedJson.inspectionPoints, ["Accident-Free: Passed"]);
 
   const deleted = await adminFetch("/api/cars/test-roadster", { method: "DELETE" });
   assert.equal(deleted.status, 200);

@@ -21,8 +21,25 @@ function readCookie(request, name) {
 export class AdminAuth {
   constructor(password, { passwordFilePath } = {}) {
     this.passwordFilePath = passwordFilePath;
+    this.sessionsFilePath = passwordFilePath ? passwordFilePath.replace(/admin-password\.json$/, "admin-sessions.json") : null;
     this.sessions = new Map();
     this.loginAttempts = new Map();
+
+    if (this.sessionsFilePath) {
+      try {
+        const rawSessions = JSON.parse(readFileSync(this.sessionsFilePath, "utf8"));
+        const now = Date.now();
+        if (Array.isArray(rawSessions)) {
+          for (const [tokenHash, expiresAt] of rawSessions) {
+            if (typeof tokenHash === "string" && typeof expiresAt === "number" && expiresAt > now) {
+              this.sessions.set(tokenHash, expiresAt);
+            }
+          }
+        }
+      } catch (error) {
+        if (error.code !== "ENOENT") console.warn("Could not read saved sessions:", error.message);
+      }
+    }
 
     let saved;
     if (passwordFilePath) {
@@ -84,6 +101,18 @@ export class AdminAuth {
     this.configured = true;
     this.sessions.clear();
     this.loginAttempts.clear();
+    this.persistSessions();
+  }
+
+  persistSessions() {
+    if (!this.sessionsFilePath) return;
+    try {
+      const now = Date.now();
+      const valid = [...this.sessions.entries()].filter(([, exp]) => exp > now);
+      writeFileSync(this.sessionsFilePath, JSON.stringify(valid), { encoding: "utf8", mode: 0o600 });
+    } catch (error) {
+      console.warn("Could not persist sessions:", error.message);
+    }
   }
 
   checkPassword(password) {
@@ -119,6 +148,7 @@ export class AdminAuth {
     const token = randomBytes(32).toString("base64url");
     const expiresAt = Date.now() + SESSION_TTL_MS;
     this.sessions.set(hashToken(token), expiresAt);
+    this.persistSessions();
     response.setHeader(
       "Set-Cookie",
       `__Host-tristar_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_MS / 1000}`,
@@ -131,7 +161,10 @@ export class AdminAuth {
     const tokenHash = hashToken(token);
     const expiresAt = this.sessions.get(tokenHash);
     if (!expiresAt || expiresAt <= Date.now()) {
-      this.sessions.delete(tokenHash);
+      if (expiresAt) {
+        this.sessions.delete(tokenHash);
+        this.persistSessions();
+      }
       return false;
     }
     return true;
@@ -139,15 +172,23 @@ export class AdminAuth {
 
   destroySession(request, response) {
     const token = readCookie(request, "__Host-tristar_admin");
-    if (token) this.sessions.delete(hashToken(token));
+    if (token) {
+      this.sessions.delete(hashToken(token));
+      this.persistSessions();
+    }
     response.setHeader("Set-Cookie", "__Host-tristar_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
   }
 
   cleanup() {
     const now = Date.now();
+    let changed = false;
     for (const [token, expiresAt] of this.sessions) {
-      if (expiresAt <= now) this.sessions.delete(token);
+      if (expiresAt <= now) {
+        this.sessions.delete(token);
+        changed = true;
+      }
     }
+    if (changed) this.persistSessions();
     for (const [address, attempt] of this.loginAttempts) {
       if ((attempt.lockedUntil && attempt.lockedUntil <= now) ||
           (attempt.lastAttemptAt && now - attempt.lastAttemptAt >= LOGIN_LOCK_MS)) {
