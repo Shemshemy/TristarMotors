@@ -402,9 +402,14 @@ function renderAdmin(){
   const rows=isLeads
     ? store.leads.map((lead,index)=>`<tr><td>${new Date(lead.createdAt).toLocaleString()}</td><td>${escapeHTML(lead.type)}</td><td>${escapeHTML(lead.name||"—")}</td><td>${escapeHTML(lead.phone||lead.email||"—")}</td><td>${escapeHTML(lead.vehicle||"—")}</td><td>${escapeHTML(lead.notes||lead.date||"—")}</td><td><button class="table-action delete" data-action="delete-lead" data-id="${index}">Remove</button></td></tr>`).join("")
     : store.cars.map(car=>`<tr><td>${car.year} ${escapeHTML(car.make)} ${escapeHTML(car.model)}</td><td>${escapeHTML(car.vin||"—")}</td><td>${priceLabel(car.price)}</td><td>${number(car.mileage)} km</td><td>${statusControl(car)}</td><td><div class="table-actions"><button class="table-action" data-action="edit-car" data-id="${escapeHTML(car.id)}">Edit</button><button class="table-action delete" data-action="delete-car" data-id="${escapeHTML(car.id)}">Remove</button></div></td></tr>`).join("");
-  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><button class="btn btn-light" type="button" data-action="open-password-dialog">Change password</button></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Customer inquiries</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Inquiries (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Customer messages and requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads&&(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit vehicle":"Add a vehicle"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><section class="vehicle-form-step" data-vehicle-step="details"><div class="admin-form-grid">${inputField("year","Year",edit?.year||new Date().getFullYear(),"number","required min=1980 max=2035")}${inputField("make","Make",edit?.make||"Mercedes-Benz","text","required")}${inputField("class","Class",edit?.class||"")}${inputField("chassis","Chassis",edit?.chassis||"")}${inputField("model","Model",edit?.model||"","text","required")}${inputField("trim","Trim",edit?.trim||"")}${selectField("body","Body style",["SUV","Sedan","Truck","Coupe","Roadster","Wagon"],edit?.body||"SUV")}${inputField("price","Cash price (KSh)",edit?.price??"","number","min=1")}${inputField("mileage","Mileage (km)",edit?.mileage||"","number","required min=0")}${selectField("transmission","Transmission",inventoryFieldOptions("transmission",["Automatic","Manual","CVT","Single-speed"]),edit?.transmission||"Automatic")}${inputField("engine","Engine",edit?.engine||"")}${selectField("drivetrain","Drivetrain",["FWD","RWD","AWD","4MATIC"],canonicalDrivetrain(edit?.drivetrain)||"RWD")}${inputField("power","Power",edit?.power||"")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"")}${inputField("color","Exterior colour",edit?.color||"")}${inputField("interior","Interior",edit?.interior||"")}${inputField("condition","Condition",edit?.condition||"")}${selectField("fuel","Fuel type",inventoryFieldOptions("fuel",["Petrol","Diesel","Electric","Hybrid","Plug-in Hybrid","Other"]),edit?.fuel||"Petrol")}${inputField("vin","VIN",edit?.vin||"")}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"In Stock")}${inputField("image","Primary image URL",edit?.image||"")}${inputField("frameBase","360 frame URL base",edit?.frameBase||"","text")}</div><p class="required-note">These details appear on the home page and vehicle page. Leave the price blank to keep the car hidden.</p><div class="admin-description-fields">${textareaField("description","Description",edit?.description||"")}${textareaField("featuresText","Features (one per line)",(edit?.features||[]).join("\n"))}</div><label class="field" style="margin-top:10px"><span class="field-label">Badge tags, comma separated</span><input name="badges" value="${escapeHTML((edit?.badges||[]).join(", "))}" placeholder="In stock, Low mileage"></label>${inspectionCheckpointsField(edit?.inspectionPoints)}</section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">For a 360° view, add 24–36 numbered photos and set the frame URL.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}${passwordChangeDialog()}</main>${footer()}<div class="toast hidden"></div>`;
+  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><button class="btn btn-light" type="button" data-action="open-password-dialog">Change password</button></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Customer inquiries</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Inquiries (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Customer messages and requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads&&(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit Mercedes-Benz Listing":"Add a Mercedes-Benz"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><section class="vehicle-form-step" data-vehicle-step="details"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">1. Vehicle &amp; Cash Price</strong></div><div class="admin-form-grid">${selectField("year","Model Year",MERCEDES_YEARS,String(edit?.year||2017))}${selectField("class","Class",MERCEDES_CLASSES,edit?.class||"C-Class")}<label class="field"><span class="field-label">Model</span><input name="model" list="mercedes-model-suggestions" placeholder="Pick or type e.g. C180 Avantgarde" value="${escapeHTML(edit?.model||"")}" required autocomplete="off"><datalist id="mercedes-model-suggestions">${MERCEDES_MODELS.map(m=>`<option value="${escapeHTML(m)}"></option>`).join("")}</datalist></label>${selectField("chassis","Chassis Code",MERCEDES_CHASSIS,edit?.chassis||"W205")}${priceInputField(edit?.price)}${inputField("mileage","Mileage (km)",edit?.mileage??"","number","required min=0 placeholder='e.g. 78200'")}</div></div><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">2. Powertrain &amp; Styling</strong></div><div class="admin-form-grid">${selectField("body","Body Style",["Sedan","SUV","Coupe","Wagon","Roadster"],edit?.body||"Sedan")}${selectField("transmission","Transmission",["7G-TRONIC Plus Auto","9G-TRONIC Auto","8G-DCT Dual-Clutch","7G-DCT Dual-Clutch","Automatic","Manual"],edit?.transmission||"7G-TRONIC Plus Auto")}${selectField("drivetrain","Drivetrain",["RWD","4MATIC","AWD","FWD"],canonicalDrivetrain(edit?.drivetrain)||"RWD")}${selectField("fuel","Fuel Type",["Petrol","Diesel","Hybrid","Plug-in Hybrid"],edit?.fuel||"Petrol")}<label class="field"><span class="field-label">Engine</span><input name="engine" list="mercedes-engine-suggestions" placeholder="Pick or type e.g. 2.0L Turbo M274 (184 hp)" value="${escapeHTML(edit?.engine||"")}"><datalist id="mercedes-engine-suggestions">${MERCEDES_ENGINES.map(e=>`<option value="${escapeHTML(e)}"></option>`).join("")}</datalist></label>${selectField("color","Exterior Colour",MERCEDES_COLORS,edit?.color||"Polar White")}${selectField("interior","Interior",MERCEDES_INTERIORS,edit?.interior||"Black Leather")}${selectField("condition","Condition / Provenance",MERCEDES_CONDITIONS,edit?.condition||"Accident Free · Grade 4.5 Import")}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"In Stock")}</div></div><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">3. Features &amp; Description</strong></div>${featuresField(edit?.features||[])}${descriptionField(edit?.description||"")}</div><div style="margin-bottom:14px">${inspectionCheckpointsField(edit?.inspectionPoints)}</div><details style="margin-top:10px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;padding:10px 14px"><summary style="font-size:12px;font-weight:600;color:#4b5563;cursor:pointer">⚙ Optional Fields (VIN, Trim, Power, 0–100 km/h, Badge tags, 360)</summary><div class="admin-form-grid" style="margin-top:10px">${inputField("vin","VIN / Chassis No.",edit?.vin||"","text","placeholder='Optional'")}${inputField("trim","Trim Level",edit?.trim||"","text","placeholder='e.g. Avantgarde, AMG Line'")}${inputField("power","Engine Power",edit?.power||"","text","placeholder='e.g. 184 hp / 300 Nm'")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"","text","placeholder='e.g. 7.9s'")}${selectField("badges","Badge Tag",["In Stock · Duty Paid","Available for Viewing","Low Mileage","Mint Condition","New Arrival"],(edit?.badges||[])[0]||"In Stock · Duty Paid")}${inputField("image","Primary Image URL",edit?.image||"","text","placeholder='Auto-filled when uploading photos'")}${inputField("frameBase","360 Frame Base URL",edit?.frameBase||"","text","placeholder='Optional'")}</div></details><input type="hidden" name="make" value="Mercedes-Benz"></section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">For a 360° view, add 24–36 numbered photos and set the frame URL.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}${passwordChangeDialog()}</main>${footer()}<div class="toast hidden"></div>`;
   renderGalleryUploadWorkspace();
   wireCommon();
+  const priceInput = document.querySelector("#admin-price-input");
+  if (priceInput) {
+    updatePriceBadge(priceInput);
+    priceInput.addEventListener("input", () => updatePriceBadge(priceInput));
+  }
   const vehicleDialog=document.querySelector("#vehicle-editor");
   if(vehicleDialog&&!vehicleDialog.open)vehicleDialog.showModal();
   if(vehicleDialog)setVehicleStep("details");
@@ -460,7 +465,13 @@ function renderAdmin(){
     event.preventDefault();const form=new FormData(event.currentTarget);const base=String(form.get("frameBase")||"").trim();
     if(uploadInProgress){toast("Wait for image uploads to finish before saving.");return;}
     if(photoCategories.some(([key])=>pendingPhotoFiles[key].length)){toast("Upload the selected photos before saving.");return;}
-    const fields={year:Number(form.get("year")),make:String(form.get("make")).trim(),model:String(form.get("model")).trim(),trim:String(form.get("trim")).trim(),body:String(form.get("body")),price:form.get("price")===""?null:Number(form.get("price")),mileage:Number(form.get("mileage")),transmission:String(form.get("transmission")).trim(),engine:String(form.get("engine")).trim(),class:String(form.get("class")).trim(),chassis:String(form.get("chassis")).trim(),drivetrain:String(form.get("drivetrain")).trim(),power:String(form.get("power")).trim(),acceleration:String(form.get("acceleration")).trim(),color:String(form.get("color")).trim(),interior:String(form.get("interior")).trim(),condition:String(form.get("condition")).trim(),description:String(form.get("description")).trim(),features:String(form.get("featuresText")).split(/\r?\n/).map(value=>value.trim()).filter(Boolean),type:String(form.get("body")),fuel:String(form.get("fuel")).trim(),vin:String(form.get("vin")).trim().toUpperCase(),status:String(form.get("status")),image:String(form.get("image")).trim()||"/images/cars/g350d_front.jpg",badges:String(form.get("badges")).split(",").map(s=>s.trim()).filter(Boolean),inspectionPoints:Array.from(document.querySelectorAll('#car-form [name="inspectionPoints"]:checked')).map(cb=>cb.value)};
+    const rawPrice = form.get("price");
+    let parsedPrice = null;
+    if (rawPrice !== null && rawPrice !== "" && Number.isFinite(Number(rawPrice)) && Number(rawPrice) > 0) {
+      const p = Number(rawPrice);
+      parsedPrice = p < 1000 ? Math.round(p * 1_000_000) : Math.round(p);
+    }
+    const fields={year:Number(form.get("year")),make:String(form.get("make")||"Mercedes-Benz").trim(),model:String(form.get("model")).trim(),trim:String(form.get("trim")||"").trim(),body:String(form.get("body")||"Sedan"),price:parsedPrice,mileage:Number(form.get("mileage")||0),transmission:String(form.get("transmission")||"7G-TRONIC Plus Auto").trim(),engine:String(form.get("engine")||"").trim(),class:String(form.get("class")||"C-Class").trim(),chassis:String(form.get("chassis")||"").trim(),drivetrain:String(form.get("drivetrain")||"RWD").trim(),power:String(form.get("power")||"").trim(),acceleration:String(form.get("acceleration")||"").trim(),color:String(form.get("color")||"Polar White").trim(),interior:String(form.get("interior")||"Black Leather").trim(),condition:String(form.get("condition")||"Accident Free · Grade 4.5 Import").trim(),description:String(form.get("description")||"").trim(),features:String(form.get("featuresText")).split(/\r?\n/).map(value=>value.trim()).filter(Boolean),type:String(form.get("body")||"Sedan"),fuel:String(form.get("fuel")||"Petrol").trim(),vin:String(form.get("vin")||"").trim().toUpperCase(),status:String(form.get("status")||"In Stock"),image:String(form.get("image")).trim()||"/images/cars/g350d_front.jpg",badges:String(form.get("badges")||"").split(",").map(s=>s.trim()).filter(Boolean),inspectionPoints:Array.from(document.querySelectorAll('#car-form [name="inspectionPoints"]:checked')).map(cb=>cb.value)};
     fields.id=editId||`${fields.make}-${fields.model}`.toLowerCase().replace(/[^a-z0-9]+/g,"-");fields.badge=String(form.get("badges")).split(",").map(value=>value.trim()).filter(Boolean)[0]||"Available";fields.galleryByCategory=structuredClone(draftGallery);fields.gallery=photoCategories.flatMap(([key])=>fields.galleryByCategory[key]);if(!fields.gallery.length)fields.gallery=[fields.image];fields.frameBase=base;fields.frames=base.includes("{frame}")?Array.from({length:24},(_,i)=>base.replace("{frame}",String(i+1).padStart(2,"0"))):[];
     try {
       const method=editId?"PUT":"POST";
@@ -476,6 +487,178 @@ function renderAdmin(){
 function passwordChangeDialog(){
   return `<dialog class="vehicle-modal password-modal" id="password-change-dialog" aria-labelledby="password-change-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">ACCOUNT SECURITY</p><h2 id="password-change-title">Change password</h2></div><button type="button" class="vehicle-modal-close" data-action="close-password-dialog" aria-label="Close">×</button></div><p class="password-dialog-copy">Choose a new password with at least 12 characters. You’ll need to sign in again after changing it.</p><form id="password-change-form"><label class="field"><span class="field-label">Current password</span><input name="currentPassword" type="password" autocomplete="current-password" required></label><label class="field"><span class="field-label">New password</span><input name="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label><label class="field"><span class="field-label">Confirm new password</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label><p class="login-error" id="password-change-error" role="alert"></p><div class="vehicle-step-actions"><button class="btn btn-light" type="button" data-action="close-password-dialog">Cancel</button><button class="btn btn-primary" type="submit">Update password</button></div></form></section></dialog>`;
 }
+const currentYear = new Date().getFullYear();
+const MERCEDES_YEARS = Array.from({ length: 22 }, (_, i) => String(currentYear - i + 1));
+
+const MERCEDES_CLASSES = [
+  "C-Class", "E-Class", "S-Class", "G-Class", "GLE-Class", "GLC-Class",
+  "A-Class", "CLS-Class", "CLA-Class", "GLA-Class", "GLS-Class", "ML-Class", "Other"
+];
+
+const MERCEDES_CHASSIS = [
+  "W204 Facelift", "W205", "W206",
+  "W212 Facelift", "W213", "W214",
+  "W221", "W222", "W223",
+  "W463", "W166", "V167", "X253",
+  "C218", "C257", "W176", "W177", "Other"
+];
+
+const MERCEDES_MODELS = [
+  "C180 Avantgarde", "C200 AMG Line", "C250 AMG Line", "C300", "C43 AMG", "C63 AMG",
+  "E200 Avantgarde", "E220d All-Terrain", "E250 Avantgarde", "E300 AMG Line", "E350", "E400",
+  "S320L CDI", "S350d", "S400L Hybrid", "S450 4MATIC", "S500L", "S580",
+  "G350d AMG Line", "G400d", "G500", "G63 AMG",
+  "GLE250d", "GLE350d 4MATIC", "GLE400d", "GLE450 4MATIC", "GLE43 AMG", "GLE53 AMG",
+  "GLC220d 4MATIC", "GLC250", "GLC300 AMG Line", "GLC43 AMG",
+  "CLS350 AMG Sport", "CLS400", "CLS450 4MATIC", "CLS53 AMG",
+  "A180 AMG Line", "A200", "A250", "A35 AMG", "A45 AMG",
+  "ML350 AMG Line", "ML250 BlueTEC", "ML400", "GLA200", "GLA250 4MATIC"
+];
+
+const MERCEDES_ENGINES = [
+  "1.6L Turbo M274 (156 hp)", "2.0L Turbo M274 (184 hp)", "2.0L Turbo M264 (255 hp)",
+  "2.0L Turbo Diesel OM654 (194 hp)", "2.1L Twin-Turbo Diesel OM651 (170 hp)",
+  "3.0L V6 Turbo Diesel OM642 (258 hp)", "3.0L Turbo Diesel OM656 (330 hp)",
+  "3.5L V6 M276 (306 hp)", "3.0L V6 Bi-Turbo M276 (362 hp)", "4.0L V8 Bi-Turbo M177 (577 hp)"
+];
+
+const MERCEDES_COLORS = [
+  "Polar White", "Obsidian Black", "Iridium Silver", "Selenite Grey",
+  "Cavansite Blue", "Designo Diamond White", "Emerald Green", "Graphite Grey", "Mojave Silver", "Other"
+];
+
+const MERCEDES_INTERIORS = [
+  "Black Leather / Brushed Aluminium", "Black Leather", "Beige / Espresso Leather",
+  "Saddle Brown Leather", "Cranberry Red Leather", "Black Nappa Leather / Alcantara",
+  "Macchiato Beige", "Other"
+];
+
+const MERCEDES_CONDITIONS = [
+  "Accident Free · Grade 4.5 Import", "Accident Free · Grade 5 Import",
+  "Accident Free · Kenyan Driven", "Immaculate · Single Owner",
+  "Foreign Used · Duty Paid in Full"
+];
+
+const POPULAR_FEATURES = [
+  "AMG Line Styling", "Sunroof / Panoramic Roof", "Leather Ergonomic Seats",
+  "360° Surround Camera", "Burmester Surround Sound", "Ambient Lighting (64-Colour)",
+  "Multibeam LED Headlights", "Parktronic Parking Sensors", "Heated Seats",
+  "Apple CarPlay / Android Auto", "Blind Spot Assist", "Active Brake Assist",
+  "Keyless-GO & Push Start", "Power Tailgate / Easy-Pack", "Multifunction Steering with Paddles",
+  "Dual-Zone Automatic Climate Control", "ECO Start/Stop System", "Original Audio / COMAND System"
+];
+
+function priceInputField(value) {
+  const numVal = value ? Number(value) : "";
+  const displayVal = numVal ? (numVal >= 1000000 ? (numVal / 1000000) : numVal) : "";
+  const actual = numVal ? (numVal < 1000 ? Math.round(numVal * 1_000_000) : Math.round(numVal)) : null;
+  const initialBadge = actual ? `✓ KSh ${actual.toLocaleString("en-KE")} (${(actual / 1_000_000).toFixed(2).replace(/\.00$/, "").replace(/(\.[1-9])0$/, "$1")}M)` : "";
+  return `
+    <label class="field" style="grid-column:span 2">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span class="field-label" style="font-weight:700;color:#1f2937">Cash Price (KSh)</span>
+        <span id="price-badge-preview" style="font-size:12px;font-weight:700;color:#b4862b">${initialBadge}</span>
+      </div>
+      <input name="price" id="admin-price-input" type="number" step="any" min="0" value="${displayVal}" placeholder="Type 2.1 (for 2.1M) or 2100000" style="font-size:14px;font-weight:600">
+      <span style="font-size:11px;color:#6b7280;margin-top:2px">💡 Enter in millions (e.g. <strong>2.1</strong>, <strong>2.38</strong>, <strong>8.5</strong>) or full number (e.g. <strong>2100000</strong>). Both work automatically!</span>
+    </label>
+  `;
+}
+
+function updatePriceBadge(input) {
+  const badge = document.querySelector("#price-badge-preview");
+  if (!badge) return;
+  const val = input.value.trim();
+  if (!val || isNaN(val) || Number(val) <= 0) {
+    badge.textContent = "";
+    return;
+  }
+  const num = Number(val);
+  const actual = num < 1000 ? Math.round(num * 1_000_000) : Math.round(num);
+  const m = (actual / 1_000_000).toFixed(2).replace(/\.00$/, "").replace(/(\.[1-9])0$/, "$1");
+  badge.textContent = `✓ KSh ${actual.toLocaleString("en-KE")} (${m}M)`;
+}
+
+function featuresField(featuresList = []) {
+  const currentSet = new Set(featuresList.map(f => f.trim().toLowerCase()));
+  return `
+    <div class="field" style="grid-column:1/-1;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="field-label" style="font-weight:700;color:#1f2937">Vehicle Features</span>
+        <span style="font-size:11px;color:#6b7280">Click pills to add/remove quickly, or edit text directly</span>
+      </div>
+      <div class="quick-feature-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        ${POPULAR_FEATURES.map(feat => {
+          const active = currentSet.has(feat.toLowerCase());
+          return `
+            <button type="button" class="btn btn-light feature-pill-btn ${active ? "active" : ""}" data-action="toggle-feature-pill" data-feature="${escapeHTML(feat)}" style="padding:4px 9px;font-size:11px;border-radius:99px;border:1px solid ${active ? "#b4862b" : "#dce2e9"};background:${active ? "#b4862b1a" : "#fff"};color:${active ? "#8a661c" : "#374151"};font-weight:${active ? "600" : "400"}">
+              ${active ? "✓ " : "+ "}${escapeHTML(feat)}
+            </button>
+          `;
+        }).join("")}
+      </div>
+      <textarea name="featuresText" id="admin-features-textarea" rows="4" placeholder="One feature per line..." style="font-size:12px;line-height:1.5">${escapeHTML(featuresList.join("\n"))}</textarea>
+    </div>
+  `;
+}
+
+function toggleFeaturePill(featureName) {
+  const textarea = document.querySelector("#admin-features-textarea");
+  if (!textarea) return;
+  const lines = textarea.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const index = lines.findIndex(l => l.toLowerCase() === featureName.toLowerCase());
+  let isNowActive = false;
+  if (index > -1) {
+    lines.splice(index, 1);
+    isNowActive = false;
+  } else {
+    lines.push(featureName);
+    isNowActive = true;
+  }
+  textarea.value = lines.join("\n");
+  document.querySelectorAll(`.feature-pill-btn`).forEach(btn => {
+    if (btn.dataset.feature?.toLowerCase() === featureName.toLowerCase()) {
+      btn.classList.toggle("active", isNowActive);
+      btn.style.borderColor = isNowActive ? "#b4862b" : "#dce2e9";
+      btn.style.background = isNowActive ? "#b4862b1a" : "#fff";
+      btn.style.color = isNowActive ? "#8a661c" : "#374151";
+      btn.style.fontWeight = isNowActive ? "600" : "400";
+      btn.textContent = (isNowActive ? "✓ " : "+ ") + featureName;
+    }
+  });
+}
+
+function descriptionField(value = "") {
+  return `
+    <div class="field" style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="field-label" style="font-weight:700;color:#1f2937">Description</span>
+        <button type="button" class="btn btn-light" data-action="auto-generate-description" style="padding:4px 9px;font-size:11px;font-weight:600;color:#b4862b;border-color:#b4862b">
+          ✨ Auto-Generate Description
+        </button>
+      </div>
+      <textarea name="description" id="admin-description-textarea" rows="3" placeholder="Description of the vehicle..." style="font-size:12px;line-height:1.5">${escapeHTML(value)}</textarea>
+    </div>
+  `;
+}
+
+function autoGenerateDescription() {
+  const form = document.querySelector("#car-form");
+  if (!form) return;
+  const year = form.querySelector('[name="year"]')?.value || "";
+  const model = form.querySelector('[name="model"]')?.value || "";
+  const color = form.querySelector('[name="color"]')?.value || "";
+  const transmission = form.querySelector('[name="transmission"]')?.value || "";
+  const drivetrain = form.querySelector('[name="drivetrain"]')?.value || "";
+  const condition = form.querySelector('[name="condition"]')?.value || "";
+  const descTextarea = document.querySelector("#admin-description-textarea");
+  if (!descTextarea) return;
+
+  const desc = `Immaculate ${year} Mercedes-Benz ${model}${color ? ` in ${color}` : ""}. Equipped with ${transmission || "automatic transmission"}, ${drivetrain} drivetrain, and verified provenance. ${condition ? `${condition}. ` : ""}Complete duty-paid documentation with immediate logbook transfer upon settlement. Available for physical inspection and test viewing at our Upper Hill showroom, Nairobi.`;
+  descTextarea.value = desc;
+  toast("Description auto-generated!");
+}
+
 const standardInspectionPoints = [
   "Accident-Free: Original factory chassis alignment, zero structural repairs",
   "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
@@ -571,6 +754,8 @@ function handleClick(event){
   if(action==="vehicle-step-next"){const form=document.querySelector("#car-form");if(form&&form.reportValidity())setVehicleStep("photos");return;}
   if(action==="vehicle-step-back"){setVehicleStep("details");return;}
   if(action==="upload-photos"){uploadSelectedPhotos();return;}
+  if(action==="toggle-feature-pill"){const f=button.dataset.feature;if(f)toggleFeaturePill(f);return;}
+  if(action==="auto-generate-description"){autoGenerateDescription();return;}
   if(action==="select-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=true);return;}
   if(action==="clear-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=false);return;}
   if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;toast("Main vehicle picture updated");return;}

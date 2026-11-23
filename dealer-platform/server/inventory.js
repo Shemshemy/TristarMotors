@@ -32,10 +32,16 @@ function normalizeDrivetrain(drivetrain) {
 }
 
 function normalizeCar(car) {
+  let price = car.price == null || car.price === "" ? null : Number(car.price);
+  if (price !== null && Number.isFinite(price) && price > 0 && price < 1000) {
+    price = Math.round(price * 1_000_000);
+  }
   return {
     ...car,
-    body: car.body || car.type,
-    type: car.type || car.body,
+    make: car.make || "Mercedes-Benz",
+    price,
+    body: car.body || car.type || "Sedan",
+    type: car.type || car.body || "Sedan",
     fuel: normalizeFuel(car.fuel),
     drivetrain: normalizeDrivetrain(car.drivetrain),
   };
