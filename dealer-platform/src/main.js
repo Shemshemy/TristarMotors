@@ -12,6 +12,12 @@ let currentFilters = { make:"all", model:"all", year:"all", body:"all", maxPrice
 let adminTab = "inventory";
 let editId = null;
 let vehicleModalOpen = false;
+let vehicleStep = "details";
+let restoredVehicleFormFields = null;
+let vehicleDraftDbPromise = null;
+let vehicleDraftSaveTimer;
+let vehicleDraftWarningShown = false;
+let pageScrollLock = null;
 let toastTimer;
 let disposeViewer = null;
 let searchExpanded = false;
@@ -28,8 +34,158 @@ const photoCategories = [
 let draftGallery = Object.fromEntries(photoCategories.map(([key]) => [key, []]));
 let pendingPhotoFiles = Object.fromEntries(photoCategories.map(([key]) => [key, []]));
 let uploadInProgress = false;
+let uploadProgress = null;
+let vehicleSaveInProgress = false;
 let photoUploadMessage = "Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.";
 let webpEncoderPromise;
+
+function lockPageScroll() {
+  if (pageScrollLock) return;
+  const body = document.body;
+  const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  pageScrollLock = {
+    top: window.scrollY,
+    position: body.style.position,
+    topStyle: body.style.top,
+    left: body.style.left,
+    right: body.style.right,
+    width: body.style.width,
+    overflow: body.style.overflow,
+    paddingRight: body.style.paddingRight,
+  };
+  body.classList.add("dialog-page-locked");
+  body.style.position = "fixed";
+  body.style.top = `-${pageScrollLock.top}px`;
+  body.style.left = "0";
+  body.style.right = "0";
+  body.style.width = "100%";
+  body.style.overflow = "hidden";
+  if (scrollbarWidth) body.style.paddingRight = `calc(${pageScrollLock.paddingRight || "0px"} + ${scrollbarWidth}px)`;
+}
+
+function unlockPageScroll() {
+  if (!pageScrollLock || document.querySelector("dialog[open]")) return;
+  const body = document.body;
+  const { top, position, topStyle, left, right, width, overflow, paddingRight } = pageScrollLock;
+  pageScrollLock = null;
+  body.classList.remove("dialog-page-locked");
+  body.style.position = position;
+  body.style.top = topStyle;
+  body.style.left = left;
+  body.style.right = right;
+  body.style.width = width;
+  body.style.overflow = overflow;
+  body.style.paddingRight = paddingRight;
+  window.scrollTo({ top, behavior: "instant" });
+}
+
+function openVehicleDraftDb() {
+  if (!vehicleDraftDbPromise) {
+    vehicleDraftDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open("tristar-admin-drafts", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("drafts");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("Could not open local draft storage"));
+    });
+  }
+  return vehicleDraftDbPromise;
+}
+
+async function saveVehicleDraft() {
+  if (!vehicleModalOpen) return;
+  const form = document.querySelector("#car-form");
+  if (!form) return;
+  const fields = [...form.querySelectorAll("input[name], select[name], textarea[name]")].map((control) => ({
+    name: control.name,
+    type: control.type,
+    value: control.value,
+    checked: control.type === "checkbox" ? control.checked : undefined,
+  }));
+  const pending = Object.fromEntries(photoCategories.map(([key]) => [key, (pendingPhotoFiles[key] || []).map(({ file }) => file)]));
+  const draft = { vehicleModalOpen, editId, vehicleStep, fields, draftGallery, pending };
+  try {
+    const db = await openVehicleDraftDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction("drafts", "readwrite");
+      transaction.objectStore("drafts").put(draft, "active-vehicle");
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not save the local draft"));
+      transaction.onabort = () => reject(transaction.error || new Error("Local draft save was interrupted"));
+    });
+    vehicleDraftWarningShown = false;
+  } catch (error) {
+    console.warn("Could not autosave vehicle form:", error);
+    if (!vehicleDraftWarningShown) {
+      vehicleDraftWarningShown = true;
+      toast("This browser could not cache the vehicle draft. Keep this tab open until you save it.");
+    }
+  }
+}
+
+function scheduleVehicleDraftSave() {
+  clearTimeout(vehicleDraftSaveTimer);
+  vehicleDraftSaveTimer = setTimeout(() => saveVehicleDraft(), 250);
+}
+
+async function restoreVehicleDraft() {
+  try {
+    const db = await openVehicleDraftDb();
+    const draft = await new Promise((resolve, reject) => {
+      const transaction = db.transaction("drafts", "readonly");
+      const request = transaction.objectStore("drafts").get("active-vehicle");
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error("Could not read the local draft"));
+    });
+    if (!draft?.vehicleModalOpen) return;
+    vehicleModalOpen = true;
+    editId = draft.editId || null;
+    vehicleStep = draft.vehicleStep === "photos" ? "photos" : "details";
+    restoredVehicleFormFields = Array.isArray(draft.fields) ? draft.fields : null;
+    draftGallery = Object.fromEntries(photoCategories.map(([key]) => [key, Array.isArray(draft.draftGallery?.[key]) ? draft.draftGallery[key] : []]));
+    pendingPhotoFiles = Object.fromEntries(photoCategories.map(([key]) => [key, (draft.pending?.[key] || []).filter((file) => file instanceof Blob).map((file) => ({ file, preview: URL.createObjectURL(file) }))]));
+  } catch (error) {
+    console.warn("Could not restore vehicle form draft:", error);
+  }
+}
+
+function applyRestoredVehicleForm() {
+  if (!restoredVehicleFormFields) return;
+  const form = document.querySelector("#car-form");
+  if (!form) return;
+  const controls = [...form.querySelectorAll("input[name], select[name], textarea[name]")];
+  restoredVehicleFormFields.forEach((saved, index) => {
+    const control = controls[index];
+    if (!control || control.name !== saved.name || control.type === "file") return;
+    if (control.type === "checkbox") control.checked = Boolean(saved.checked);
+    else control.value = saved.value ?? "";
+  });
+  const selectedFeatures = new Set((form.querySelector('[name="featuresText"]')?.value || "").split(/\r?\n/).map((feature) => feature.trim().toLowerCase()).filter(Boolean));
+  form.querySelectorAll(".feature-pill-btn").forEach((button) => {
+    const active = selectedFeatures.has(button.dataset.feature?.toLowerCase());
+    button.classList.toggle("active", active);
+    button.style.borderColor = active ? "#b4862b" : "#dce2e9";
+    button.style.background = active ? "#b4862b1a" : "#fff";
+    button.style.color = active ? "#8a661c" : "#374151";
+    button.style.fontWeight = active ? "600" : "400";
+    button.textContent = `${active ? "✓ " : "+ "}${button.dataset.feature}`;
+  });
+  restoredVehicleFormFields = null;
+}
+
+async function clearVehicleDraft() {
+  clearTimeout(vehicleDraftSaveTimer);
+  try {
+    const db = await openVehicleDraftDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction("drafts", "readwrite");
+      transaction.objectStore("drafts").delete("active-vehicle");
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not clear the local draft"));
+    });
+  } catch (error) {
+    console.warn("Could not clear saved vehicle draft:", error);
+  }
+}
 
 const escapeHTML = (value="") => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const route = () => location.hash || "#/";
@@ -151,21 +307,47 @@ function renderGalleryUploadWorkspace() {
     const saved = draftGallery[key] || [];
     const pending = pendingPhotoFiles[key] || [];
     return `<section class="photo-category"><div class="photo-category-heading"><h3>${label}</h3><span>${saved.length} uploaded · ${pending.length} selected</span></div><label class="photo-file-picker"><span>Select ${label.toLowerCase()}</span><input type="file" accept="image/*" multiple data-photo-category="${key}" aria-label="Select ${label} vehicle pictures" ${uploadInProgress ? "disabled" : ""}></label><div class="photo-preview-grid">${saved.map((url, index) => `<figure class="photo-preview saved"><img src="${escapeHTML(url)}" alt="${label} vehicle view ${index + 1}" loading="lazy"><figcaption>Uploaded</figcaption>${key === "front" ? `<button type="button" class="photo-use-main" data-use-main="${escapeHTML(url)}">Use as main picture</button>` : ""}</figure>`).join("")}${pending.map((photo, index) => `<figure class="photo-preview"><img src="${photo.preview}" alt="Preview of ${escapeHTML(photo.file.name)}"><figcaption>${escapeHTML(photo.file.name)} · preview</figcaption><button type="button" class="photo-remove-pending" data-remove-photo="${key}" data-photo-index="${index}" aria-label="Remove ${escapeHTML(photo.file.name)} from selection">Remove</button></figure>`).join("")}</div></section>`;
-  }).join("")}<div class="photo-upload-actions"><button class="btn btn-light" type="button" data-action="upload-photos" ${uploadInProgress || !photoCategories.some(([key]) => pendingPhotoFiles[key].length) ? "disabled" : ""}>${uploadInProgress ? "Converting and uploading…" : "Upload selected photos"}</button><p class="photo-upload-status" id="photo-upload-status" role="status">Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.</p></div>`;
+  }).join("")}<div class="photo-upload-actions"><button class="btn btn-light" type="button" data-action="upload-photos" ${uploadInProgress || !photoCategories.some(([key]) => pendingPhotoFiles[key].length) ? "disabled" : ""}>${uploadInProgress ? "Converting and uploading…" : "Upload selected photos"}</button>${uploadProgress ? `<div class="photo-upload-progress" aria-live="polite"><div class="photo-upload-progress-label"><span id="photo-upload-progress-label">${escapeHTML(uploadProgressLabel())}</span><strong id="photo-upload-progress-count">${uploadProgress.complete} / ${uploadProgress.total}</strong></div><progress id="photo-upload-progress-bar" value="${uploadProgress.complete}" max="${uploadProgress.total}" aria-label="Photo upload progress"></progress></div>` : ""}<p class="photo-upload-status" id="photo-upload-status" role="status">Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.</p></div>`;
   const statusNode = root.querySelector("#photo-upload-status");
-  if (statusNode) statusNode.textContent = photoUploadMessage;
+  if (statusNode) {
+    statusNode.textContent = photoUploadMessage;
+    statusNode.setAttribute("role", photoUploadMessage.startsWith("Upload stopped:") ? "alert" : "status");
+  }
   root.querySelectorAll("[data-photo-category]").forEach((input) => input.addEventListener("change", () => {
     const category = input.dataset.photoCategory;
     for (const photo of pendingPhotoFiles[category]) URL.revokeObjectURL(photo.preview);
     pendingPhotoFiles[category].push(...[...input.files].map((file) => ({ file, preview: URL.createObjectURL(file) })));
+    uploadProgress = null;
+    photoUploadMessage = "Photos selected. Upload them, then save the vehicle to attach them to this listing.";
+    scheduleVehicleDraftSave();
     renderGalleryUploadWorkspace();
   }));
   root.querySelectorAll("[data-remove-photo]").forEach((button) => button.addEventListener("click", () => {
     const category = button.dataset.removePhoto;
     const [photo] = pendingPhotoFiles[category].splice(Number(button.dataset.photoIndex), 1);
     if (photo) URL.revokeObjectURL(photo.preview);
+    scheduleVehicleDraftSave();
     renderGalleryUploadWorkspace();
   }));
+}
+function uploadProgressLabel() {
+  if (!uploadProgress) return "";
+  if (uploadProgress.phase === "Complete") return "All selected photos uploaded";
+  const item = uploadProgress.current ? `Photo ${uploadProgress.current} of ${uploadProgress.total}` : "Preparing upload";
+  return `${item}${uploadProgress.currentName ? ` · ${uploadProgress.currentName}` : ""}${uploadProgress.phase ? ` · ${uploadProgress.phase}` : ""}`;
+}
+function updateUploadProgressView() {
+  if (!uploadProgress) return;
+  const label = document.querySelector("#photo-upload-progress-label");
+  const count = document.querySelector("#photo-upload-progress-count");
+  const bar = document.querySelector("#photo-upload-progress-bar");
+  if (label) label.textContent = uploadProgressLabel();
+  if (count) count.textContent = `${uploadProgress.complete} / ${uploadProgress.total}`;
+  if (bar) {
+    bar.max = uploadProgress.total;
+    bar.value = uploadProgress.complete;
+    bar.setAttribute("aria-valuetext", `${uploadProgress.complete} of ${uploadProgress.total} photos uploaded`);
+  }
 }
 async function convertToWebP(file) {
   if (!file.type.startsWith("image/")) throw new Error(`${file.name}: select an image file`);
@@ -202,9 +384,13 @@ async function convertToWebP(file) {
 }
 async function uploadSelectedPhotos() {
   if (uploadInProgress) return;
+  const total = photoCategories.reduce((sum, [key]) => sum + pendingPhotoFiles[key].length, 0);
+  if (!total) return;
   uploadInProgress = true;
+  uploadProgress = { total, complete: 0, current: 0, currentName: "", phase: "Starting" };
   photoUploadMessage = "Preparing selected images…";
   renderGalleryUploadWorkspace();
+  await saveVehicleDraft();
   const status = (message) => {
     photoUploadMessage = message;
     const node = document.querySelector("#photo-upload-status");
@@ -212,6 +398,7 @@ async function uploadSelectedPhotos() {
       node.textContent = photoUploadMessage;
       node.setAttribute("role", message.startsWith("Upload stopped:") ? "alert" : "status");
     }
+    updateUploadProgressView();
   };
   let uploadedCount = 0;
   let frontAssigned = false;
@@ -219,8 +406,14 @@ async function uploadSelectedPhotos() {
     for (const [category] of photoCategories) {
       while (pendingPhotoFiles[category].length) {
         const [photo] = pendingPhotoFiles[category];
-        status(`Converting and uploading ${photo.file.name}…`);
+        uploadProgress.current = uploadedCount + 1;
+        uploadProgress.currentName = photo.file.name;
+        uploadProgress.phase = "Converting";
+        status(`Photo ${uploadProgress.current} of ${total}: converting ${photo.file.name}…`);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const data = await convertToWebP(photo.file);
+        uploadProgress.phase = "Uploading";
+        status(`Photo ${uploadProgress.current} of ${total}: uploading ${photo.file.name}…`);
         const uploaded = await apiRequest("/api/uploads", {
           method: "POST",
           body: JSON.stringify({ category, contentType: "image/webp", data }),
@@ -234,11 +427,15 @@ async function uploadSelectedPhotos() {
           frontAssigned = true;
         }
         uploadedCount += 1;
+        uploadProgress.complete = uploadedCount;
+        uploadProgress.phase = uploadedCount === total ? "Complete" : "Uploaded";
+        await saveVehicleDraft();
         renderGalleryUploadWorkspace();
       }
     }
     status(`${uploadedCount} ${uploadedCount === 1 ? "photo" : "photos"} uploaded. Choose Save vehicle to attach them to this listing.`);
   } catch (error) {
+    if (uploadProgress) uploadProgress.phase = "Stopped";
     const message = error.message.includes("Administrator sign-in is required")
       ? "Your admin sign-in has expired. Sign in again, reopen this listing, and retry the upload."
       : error.message;
@@ -246,6 +443,7 @@ async function uploadSelectedPhotos() {
   } finally {
     uploadInProgress = false;
     renderGalleryUploadWorkspace();
+    updateUploadProgressView();
     if (uploadedCount > 0 && !photoUploadMessage.startsWith("Upload stopped:")) {
       status(`${uploadedCount} ${uploadedCount === 1 ? "photo" : "photos"} uploaded. Choose Save vehicle to attach them to this listing. Existing photos were kept.`);
     }
@@ -426,9 +624,13 @@ function renderAdmin(){
   const rows=isLeads
     ? store.leads.map((lead,index)=>`<tr><td>${new Date(lead.createdAt).toLocaleString()}</td><td>${escapeHTML(lead.type)}</td><td>${escapeHTML(lead.name||"—")}</td><td>${escapeHTML(lead.phone||lead.email||"—")}</td><td>${escapeHTML(lead.vehicle||"—")}</td><td>${escapeHTML(lead.notes||lead.date||"—")}</td><td><button class="table-action delete" data-action="delete-lead" data-id="${index}">Remove</button></td></tr>`).join("")
     : store.cars.map(car=>`<tr><td>${car.year} ${escapeHTML(car.make)} ${escapeHTML(car.model)}</td><td>${escapeHTML(car.vin||"—")}</td><td>${priceLabel(car.price)}</td><td>${number(car.mileage)} km</td><td>${statusControl(car)}</td><td><div class="table-actions"><button class="table-action" data-action="edit-car" data-id="${escapeHTML(car.id)}">Edit</button><button class="table-action delete" data-action="delete-car" data-id="${escapeHTML(car.id)}">Remove</button></div></td></tr>`).join("");
-  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><button class="btn btn-light" type="button" data-action="open-password-dialog">Change password</button></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Customer inquiries</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Inquiries (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Customer messages and requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads&&(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit Mercedes-Benz Listing":"Add a Mercedes-Benz"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><p class="car-form-error" data-car-form-error role="alert" hidden></p><section class="vehicle-form-step" data-vehicle-step="details"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">Car basics</strong></div><div class="admin-form-grid">${selectField("year","Model Year",MERCEDES_YEARS,String(edit?.year||""),true)}${selectField("class","Class",MERCEDES_CLASSES,edit?.class||"",true)}<label class="field"><span class="field-label">Model</span><input name="model" list="mercedes-model-suggestions" placeholder="Pick or type e.g. C180 Avantgarde" value="${escapeHTML(edit?.model||"")}" required autocomplete="off"><datalist id="mercedes-model-suggestions">${MERCEDES_MODELS.map(m=>`<option value="${escapeHTML(m)}"></option>`).join("")}</datalist></label>${selectField("body","Body style",["Sedan","SUV","Coupe","Wagon","Roadster"],edit?.body||"",true)}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"",true)}${priceInputField(edit?.price)}${inputField("mileage","Mileage (km)",edit?.mileage??"","number","required min=0 placeholder='e.g. 78200'")}</div></div><details class="admin-form-section"><summary>Vehicle specifications and condition (optional)</summary><div class="admin-form-section-body"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">2. Powertrain &amp; Styling</strong></div><div class="admin-form-grid">${selectField("transmission","Transmission",["7G-TRONIC Plus Auto","9G-TRONIC Auto","8G-DCT Dual-Clutch","7G-DCT Dual-Clutch","Automatic","Manual"],edit?.transmission||"")}${selectField("drivetrain","Drivetrain",["RWD","4MATIC","AWD","FWD"],canonicalDrivetrain(edit?.drivetrain)||"")}${selectField("fuel","Fuel Type",["Petrol","Diesel","Hybrid","Plug-in Hybrid"],edit?.fuel||"")}<label class="field"><span class="field-label">Engine</span><input name="engine" list="mercedes-engine-suggestions" placeholder="Pick or type e.g. 2.0L Turbo M274 (184 hp)" value="${escapeHTML(edit?.engine||"")}"><datalist id="mercedes-engine-suggestions">${MERCEDES_ENGINES.map(e=>`<option value="${escapeHTML(e)}"></option>`).join("")}</datalist></label>${selectField("color","Exterior Colour",MERCEDES_COLORS,edit?.color||"")}${selectField("interior","Interior",MERCEDES_INTERIORS,edit?.interior||"")}${selectField("condition","Condition / Provenance",MERCEDES_CONDITIONS,edit?.condition||"")}</div></div></details><details class="admin-form-section"><summary>Features and description (optional)</summary><div class="admin-form-section-body"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">3. Features &amp; Description</strong></div>${featuresField(edit?.features||[])}${descriptionField(edit?.description||"")}</div></details><details class="admin-form-section"><summary>Inspection checklist (optional)</summary><div class="admin-form-section-body"><div style="margin-bottom:14px">${inspectionCheckpointsField(edit?.inspectionPoints)}</div></div></details><details style="margin-top:10px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;padding:10px 14px"><summary style="font-size:12px;font-weight:600;color:#4b5563;cursor:pointer">⚙ Optional Fields (VIN, Trim, Power, 0–100 km/h, Badge tags, 360)</summary><div class="admin-form-grid" style="margin-top:10px">${inputField("vin","VIN",edit?.vin||"","text","placeholder='Optional'")}${selectField("chassis","Chassis Code",MERCEDES_CHASSIS,edit?.chassis||"")}${inputField("trim","Trim Level",edit?.trim||"","text","placeholder='e.g. Avantgarde, AMG Line'")}${inputField("power","Engine Power",edit?.power||"","text","placeholder='e.g. 184 hp / 300 Nm'")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"","text","placeholder='e.g. 7.9s'")}${selectField("badges","Badge Tag",["In Stock · Duty Paid","Available for Viewing","Low Mileage","Mint Condition","New Arrival"],(edit?.badges||[])[0]||"In Stock · Duty Paid")}${inputField("image","Primary Image URL",edit?.image||"","text","placeholder='Auto-filled when uploading photos'")}${inputField("frameBase","360 Frame Base URL",edit?.frameBase||"","text","placeholder='Optional'")}</div></details><input type="hidden" name="make" value="Mercedes-Benz"></section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">Upload at least one Front photo (or set a primary image URL in Optional Fields) before saving. After uploading, choose Save vehicle to attach the photos to this listing.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}${passwordChangeDialog()}</main>${footer()}<div class="toast hidden"></div>`;
+  app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><button class="btn btn-light" type="button" data-action="open-password-dialog">Change password</button></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div><div class="admin-metric"><span>Customer inquiries</span><strong>${store.leads.length}</strong></div></div><div class="admin-tabs"><button class="admin-tab ${!isLeads?"active":""}" data-admin-tab="inventory">Inventory (${store.cars.length})</button><button class="admin-tab ${isLeads?"active":""}" data-admin-tab="leads">Inquiries (${store.leads.length})</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr>${isLeads?"<th>Received</th><th>Type</th><th>Name</th><th>Contact</th><th>Vehicle</th><th>Details</th><th></th>":"<th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th>"}</tr></thead><tbody>${rows||`<tr><td colspan="7">${isLeads?"No leads yet. Customer messages and requests will appear here.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${!isLeads&&(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit Mercedes-Benz Listing":"Add a Mercedes-Benz"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><p class="draft-autosave-note">Your progress is saved on this device and restored if you refresh.</p><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><p class="car-form-error" data-car-form-error role="alert" hidden></p><section class="vehicle-form-step" data-vehicle-step="details"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">Car basics</strong></div><div class="admin-form-grid">${selectField("year","Model Year",MERCEDES_YEARS,String(edit?.year||""),true)}${selectField("class","Class",MERCEDES_CLASSES,edit?.class||"",true)}<label class="field"><span class="field-label">Model</span><input name="model" list="mercedes-model-suggestions" placeholder="Pick or type e.g. C180 Avantgarde" value="${escapeHTML(edit?.model||"")}" required autocomplete="off"><datalist id="mercedes-model-suggestions">${MERCEDES_MODELS.map(m=>`<option value="${escapeHTML(m)}"></option>`).join("")}</datalist></label>${selectField("body","Body style",["Sedan","SUV","Coupe","Wagon","Roadster"],edit?.body||"",true)}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"",true)}${priceInputField(edit?.price)}${inputField("mileage","Mileage (km)",edit?.mileage??"","number","required min=0 placeholder='e.g. 78200'")}</div></div><details class="admin-form-section"><summary>Vehicle specifications and condition (optional)</summary><div class="admin-form-section-body"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">2. Powertrain &amp; Styling</strong></div><div class="admin-form-grid">${selectField("transmission","Transmission",["7G-TRONIC Plus Auto","9G-TRONIC Auto","8G-DCT Dual-Clutch","7G-DCT Dual-Clutch","Automatic","Manual"],edit?.transmission||"")}${selectField("drivetrain","Drivetrain",["RWD","4MATIC","AWD","FWD"],canonicalDrivetrain(edit?.drivetrain)||"")}${selectField("fuel","Fuel Type",["Petrol","Diesel","Hybrid","Plug-in Hybrid"],edit?.fuel||"")}<label class="field"><span class="field-label">Engine</span><input name="engine" list="mercedes-engine-suggestions" placeholder="Pick or type e.g. 2.0L Turbo M274 (184 hp)" value="${escapeHTML(edit?.engine||"")}"><datalist id="mercedes-engine-suggestions">${MERCEDES_ENGINES.map(e=>`<option value="${escapeHTML(e)}"></option>`).join("")}</datalist></label>${selectField("color","Exterior Colour",MERCEDES_COLORS,edit?.color||"")}${selectField("interior","Interior",MERCEDES_INTERIORS,edit?.interior||"")}${selectField("condition","Condition / Provenance",MERCEDES_CONDITIONS,edit?.condition||"")}</div></div></details><details class="admin-form-section"><summary>Features and description (optional)</summary><div class="admin-form-section-body"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">3. Features &amp; Description</strong></div>${featuresField(edit?.features||[])}${descriptionField(edit?.description||"")}</div></details><details class="admin-form-section"><summary>Inspection checklist (optional)</summary><div class="admin-form-section-body"><div style="margin-bottom:14px">${inspectionCheckpointsField(edit?.inspectionPoints)}</div></div></details><details style="margin-top:10px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;padding:10px 14px"><summary style="font-size:12px;font-weight:600;color:#4b5563;cursor:pointer">⚙ Optional Fields (VIN, Trim, Power, 0–100 km/h, Badge tags, 360)</summary><div class="admin-form-grid" style="margin-top:10px">${inputField("vin","VIN",edit?.vin||"","text","placeholder='Optional'")}${selectField("chassis","Chassis Code",MERCEDES_CHASSIS,edit?.chassis||"")}${inputField("trim","Trim Level",edit?.trim||"","text","placeholder='e.g. Avantgarde, AMG Line'")}${inputField("power","Engine Power",edit?.power||"","text","placeholder='e.g. 184 hp / 300 Nm'")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"","text","placeholder='e.g. 7.9s'")}${selectField("badges","Badge Tag",["In Stock · Duty Paid","Available for Viewing","Low Mileage","Mint Condition","New Arrival"],(edit?.badges||[])[0]||"In Stock · Duty Paid")}${inputField("image","Primary Image URL",edit?.image||"","text","placeholder='Auto-filled when uploading photos'")}${inputField("frameBase","360 Frame Base URL",edit?.frameBase||"","text","placeholder='Optional'")}</div></details><input type="hidden" name="make" value="Mercedes-Benz"></section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">Upload at least one Front photo (or set a primary image URL in Optional Fields) before saving. After uploading, choose Save vehicle to attach the photos to this listing.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" id="save-vehicle-button" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}${passwordChangeDialog()}</main>${footer()}<div class="toast hidden"></div>`;
+  applyRestoredVehicleForm();
   renderGalleryUploadWorkspace();
   wireCommon();
+  const carForm = document.querySelector("#car-form");
+  carForm?.addEventListener("input", scheduleVehicleDraftSave);
+  carForm?.addEventListener("change", scheduleVehicleDraftSave);
   const priceInput = document.querySelector("#admin-price-input");
   const priceUnit = document.querySelector("#admin-price-unit");
   if (priceInput) {
@@ -437,10 +639,12 @@ function renderAdmin(){
     priceUnit?.addEventListener("change", () => updatePriceBadge(priceInput));
   }
   const vehicleDialog=document.querySelector("#vehicle-editor");
-  if(vehicleDialog&&!vehicleDialog.open)vehicleDialog.showModal();
-  if(vehicleDialog)setVehicleStep("details");
+  if(vehicleDialog&&!vehicleDialog.open){vehicleDialog.showModal();lockPageScroll();}
+  if(vehicleDialog)setVehicleStep(vehicleStep);
   vehicleDialog?.addEventListener("click",event=>{if(event.target===vehicleDialog)closeVehicleModal();});
   vehicleDialog?.addEventListener("cancel",event=>{event.preventDefault();closeVehicleModal();});
+  vehicleDialog?.addEventListener("close",unlockPageScroll);
+  document.querySelector("#password-change-dialog")?.addEventListener("close",unlockPageScroll);
   document.querySelector("#password-change-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form=event.currentTarget;
@@ -454,6 +658,8 @@ function renderAdmin(){
     submit.disabled=true;
     try {
       await apiRequest("/api/auth/change-password",{method:"POST",body:JSON.stringify({currentPassword:String(values.get("currentPassword")),newPassword:nextPassword})});
+      document.querySelector("#password-change-dialog")?.close();
+      unlockPageScroll();
       adminSession={configured:true,authenticated:false};
       renderAdmin();
       toast("Password changed. Sign in with your new password.");
@@ -492,8 +698,12 @@ function renderAdmin(){
     if(uploadInProgress){setCarFormError("Wait for the photo upload to finish before saving this vehicle.");return;}
     if(photoCategories.some(([key])=>pendingPhotoFiles[key].length)){setCarFormError("Upload the selected photos before saving this vehicle.");return;}
     const hasMainImage=Boolean(String(form.get("image")||"").trim());
-    if(!draftGallery.front.length&&!hasMainImage){setCarFormError("Add at least one Front photo, or enter a primary image URL under Optional Fields, before saving.");return;}
+  if(!draftGallery.front.length&&!hasMainImage){setCarFormError("Add at least one Front photo, or enter a primary image URL under Optional Fields, before saving.");return;}
     setCarFormError();
+    if(vehicleSaveInProgress)return;
+    vehicleSaveInProgress=true;
+    const saveButton=formElement.querySelector("#save-vehicle-button");
+    if(saveButton){saveButton.disabled=true;saveButton.textContent="Saving vehicle…";}
     const rawPrice = form.get("price");
     let parsedPrice = null;
     if (rawPrice !== null && rawPrice !== "" && Number.isFinite(Number(rawPrice)) && Number(rawPrice) > 0) {
@@ -507,8 +717,14 @@ function renderAdmin(){
       const savedCar=await apiRequest(editId?`/api/cars/${encodeURIComponent(fields.id)}`:"/api/cars",{method,body:JSON.stringify(fields)});
       if(editId)store.cars=store.cars.map(car=>car.id===savedCar.id?savedCar:car);
       else store.cars=[savedCar,...store.cars];
-      editId=null;vehicleModalOpen=false;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();adminTab="inventory";renderAdmin();toast("Vehicle listing saved");
+      await clearVehicleDraft();
+      document.querySelector("#vehicle-editor")?.close();
+      unlockPageScroll();
+      vehicleSaveInProgress=false;editId=null;vehicleModalOpen=false;vehicleStep="details";uploadProgress=null;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();adminTab="inventory";renderAdmin();toast("Vehicle listing saved");
     } catch(error) {
+      vehicleSaveInProgress=false;
+      const saveButton=formElement.querySelector("#save-vehicle-button");
+      if(saveButton){saveButton.disabled=false;saveButton.textContent=editId?"Save changes":"Save vehicle";}
       setCarFormError(`Could not save vehicle: ${error.message}. Your uploaded photos are still available; correct the details and retry.`);
     }
   });
@@ -769,18 +985,25 @@ function wireCommon(){
   document.querySelectorAll("[data-scroll]").forEach(a=>a.addEventListener("click",event=>{event.preventDefault();const scrollToTarget=()=>document.getElementById(a.dataset.scroll)?.scrollIntoView({behavior:"smooth",block:"start"});if(route()!=="#/"){location.hash="#/";setTimeout(scrollToTarget,80);}else scrollToTarget();}));
 }
 function closeVehicleModal(){
+  if(uploadInProgress||vehicleSaveInProgress){setCarFormError(uploadInProgress?"Please wait for the photo upload to finish before closing this vehicle form.":"Please wait for the vehicle save to finish before closing this form.");return;}
+  document.querySelector("#vehicle-editor")?.close();
+  unlockPageScroll();
   vehicleModalOpen=false;
   editId=null;
+  vehicleStep="details";
   for(const photos of Object.values(pendingPhotoFiles))for(const photo of photos)URL.revokeObjectURL(photo.preview);
   draftGallery=emptyDraftGallery();
   pendingPhotoFiles=emptyDraftGallery();
+  void clearVehicleDraft();
   renderAdmin();
 }
 function setVehicleStep(step){
+  vehicleStep=step;
   document.querySelectorAll("[data-vehicle-step]").forEach(section=>section.hidden=section.dataset.vehicleStep!==step);
   document.querySelectorAll("[data-step-actions]").forEach(actions=>actions.hidden=actions.dataset.stepActions!==step);
   document.querySelectorAll("[data-step-indicator]").forEach(label=>label.classList.toggle("active",label.dataset.stepIndicator===step));
   if(step==="photos")renderGalleryUploadWorkspace();
+  scheduleVehicleDraftSave();
   document.querySelector("#vehicle-editor .admin-form-card")?.scrollTo({top:0,behavior:"smooth"});
 }
 function handleClick(event){
@@ -788,23 +1011,23 @@ function handleClick(event){
   const tab=event.target.closest("[data-admin-tab]");if(tab)return;
   const button=event.target.closest("[data-action]");if(!button)return;
   const action=button.dataset.action,id=button.dataset.id||button.dataset.car;
-  if(action==="open-password-dialog"){document.querySelector("#password-change-dialog")?.showModal();return;}
-  if(action==="close-password-dialog"){document.querySelector("#password-change-dialog")?.close();return;}
-  if(action==="open-vehicle-modal"){vehicleModalOpen=true;editId=null;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();renderAdmin();setVehicleStep("details");return;}
+  if(action==="open-password-dialog"){document.querySelector("#password-change-dialog")?.showModal();lockPageScroll();return;}
+  if(action==="close-password-dialog"){document.querySelector("#password-change-dialog")?.close();unlockPageScroll();return;}
+  if(action==="open-vehicle-modal"){vehicleModalOpen=true;editId=null;vehicleStep="details";uploadProgress=null;photoUploadMessage="Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.";draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();void clearVehicleDraft();renderAdmin();setVehicleStep("details");return;}
   if(action==="close-vehicle-modal"){closeVehicleModal();return;}
   if(action==="vehicle-step-next"){const form=document.querySelector("#car-form");if(form&&validateCarFormStep(form))setVehicleStep("photos");return;}
   if(action==="vehicle-step-back"){setVehicleStep("details");return;}
   if(action==="upload-photos"){uploadSelectedPhotos();return;}
-  if(action==="toggle-feature-pill"){const f=button.dataset.feature;if(f)toggleFeaturePill(f);return;}
-  if(action==="auto-generate-description"){autoGenerateDescription();return;}
-  if(action==="select-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=true);return;}
-  if(action==="clear-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=false);return;}
-  if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;toast("Main vehicle picture updated");return;}
+  if(action==="toggle-feature-pill"){const f=button.dataset.feature;if(f)toggleFeaturePill(f);scheduleVehicleDraftSave();return;}
+  if(action==="auto-generate-description"){autoGenerateDescription();scheduleVehicleDraftSave();return;}
+  if(action==="select-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=true);scheduleVehicleDraftSave();return;}
+  if(action==="clear-all-inspections"){document.querySelectorAll('#car-form [name="inspectionPoints"]').forEach(cb=>cb.checked=false);scheduleVehicleDraftSave();return;}
+  if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;scheduleVehicleDraftSave();toast("Main vehicle picture updated");return;}
   if(action==="clear-filters"){currentFilters={make:"all",model:"all",year:"all",body:"all",maxPrice:"all",maxMileage:"all",availability:"all",fuel:"all",transmission:"all",search:"",saved:false};mobileCategory="All";renderHome();}
   if(action==="toggle-search-filters"){searchExpanded=!searchExpanded;document.querySelector("#advanced-search")?.classList.toggle("expanded",searchExpanded);button.setAttribute("aria-expanded",String(searchExpanded));button.setAttribute("aria-label",`${searchExpanded?"Hide":"Show"} search filters`);}
   if(action==="toggle-filters")document.querySelector("#filter-panel")?.classList.toggle("expanded");
-  if(action==="edit-car"){editId=id;vehicleModalOpen=true;draftGallery=readDraftGallery(carById(id));pendingPhotoFiles=emptyDraftGallery();renderAdmin();setVehicleStep("details");}
-  if(action==="cancel-edit"){editId=null;vehicleModalOpen=false;draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();renderAdmin();}
+  if(action==="edit-car"){editId=id;vehicleModalOpen=true;vehicleStep="details";uploadProgress=null;photoUploadMessage="Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.";draftGallery=readDraftGallery(carById(id));pendingPhotoFiles=emptyDraftGallery();renderAdmin();setVehicleStep("details");}
+  if(action==="cancel-edit"){editId=null;vehicleModalOpen=false;vehicleStep="details";draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();void clearVehicleDraft();renderAdmin();}
   if(action==="delete-car"&&confirm("Remove this vehicle from inventory?")){apiRequest(`/api/cars/${encodeURIComponent(id)}`,{method:"DELETE"}).then(()=>{store.cars=store.cars.filter(car=>car.id!==id);renderAdmin();toast("Vehicle removed");}).catch(error=>toast(`Could not remove vehicle: ${error.message}`));}
   if(action==="delete-lead"&&confirm("Remove this customer lead?")){store.leads.splice(Number(id),1);save();renderAdmin();toast("Lead removed");}
   if(action==="reset-demo"&&confirm("Restore the starting cars and clear saved cars and inquiries?")){apiRequest("/api/reset",{method:"POST"}).then(cars=>{store=resetDemoStore();store.cars=cars;editId=null;renderAdmin();toast("Sample inventory restored");}).catch(error=>toast(`Could not restore inventory: ${error.message}`));}
@@ -828,7 +1051,7 @@ window.addEventListener("hashchange",()=>{
   requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:"instant"}));
 });
 app.addEventListener("click", handleClick);
-refreshInventory().then(render).catch((error)=>{
+refreshInventory().then(async()=>{await restoreVehicleDraft();render();}).catch((error)=>{
   console.error("Could not load vehicle inventory:",error);
   app.innerHTML=`${header()}<main class="shell section admin-connection-error"><h1>Admin server not connected</h1><p>Start the site with <code>npm run dev</code>, then reload this page.</p><a class="btn btn-dark" href="/">Back to website</a></main>${footer()}`;
 });
