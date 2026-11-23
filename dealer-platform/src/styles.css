@@ -6371,6 +6371,54 @@ body,.app-home {
   margin-top: 0;
 }
 
+.price-entry-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(135px, .8fr);
+  gap: 8px;
+}
+
+.price-entry-controls input,
+.price-entry-controls select {
+  min-width: 0;
+}
+
+.price-entry-preview {
+  min-height: 18px;
+  color: #8a6827;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.admin-form-section {
+  margin: 10px 0;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8f9fa;
+}
+
+.admin-form-section > summary {
+  padding: 14px 0;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-form-section[open] > summary {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-form-section-body {
+  padding: 14px 0;
+}
+
+@media (max-width: 600px) {
+  .price-entry-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(112px, .85fr);
+  }
+}
+
 .vehicle-modal .vehicle-step-actions {
   display: flex;
   justify-content: flex-end;

@@ -1,2 +1,4 @@
 public-site-dist/
 node_modules/
+dealer-platform/data/*.json
+dealer-platform/data/*.sqlite
