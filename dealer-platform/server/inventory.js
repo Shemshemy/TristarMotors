@@ -100,7 +100,7 @@ export class InventoryDatabase {
   }
 
   list() {
-    return this.db.prepare("SELECT data_json, status FROM inventory ORDER BY rowid").all()
+    return this.db.prepare("SELECT data_json, status FROM inventory ORDER BY rowid DESC").all()
       .map(({ data_json, status }) => ({ ...normalizeCar(JSON.parse(data_json)), status }));
   }
 

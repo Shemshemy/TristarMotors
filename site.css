@@ -1995,21 +1995,6 @@ body:has(#vehicle-detail) em {
   align-items: start;
 }
 
-.detail-support-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: clamp(32px, 5vw, 64px);
-  align-items: start;
-  margin-top: 28px;
-}
-
-.detail-support-column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
-
 /* Gallery */
 .detail-gallery {
   display: flex;
@@ -2126,6 +2111,7 @@ body:has(#vehicle-detail) em {
 .detail-summary {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
 .detail-main-info {
@@ -2134,7 +2120,7 @@ body:has(#vehicle-detail) em {
 }
 
 .detail-summary h1 {
-  font-size: clamp(32px, 4.2vw, 48px);
+  font-size: clamp(30px, 3.7vw, 42px);
   margin-bottom: 8px;
 }
 
@@ -2347,6 +2333,12 @@ body:has(#vehicle-detail) em {
 
 .detail-cta #detail-email {
   flex: 1 1 100%;
+  order: 3;
+}
+
+.detail-cta #detail-whatsapp,
+.detail-cta #detail-call {
+  flex: 1 1 calc(50% - 6px);
 }
 
 .detail-cta .button svg {
@@ -2903,13 +2895,6 @@ body:has(#vehicle-detail) em {
   }
 }
 
-@media (min-width: 769px) and (max-width: 1080px) {
-  .detail-support-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
-}
-
 /* ==========================================================================
    MOTION & ACCESSIBILITY
    ========================================================================== */
@@ -2967,18 +2952,13 @@ body:has(#vehicle-detail) em {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "heading"
-      "gallery"
-      "info";
-    gap: 14px;
-  }
-
-  .detail-support-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    margin-top: 16px;
-  }
-
-  .detail-support-column {
+      "gallery-image"
+      "gallery-thumbnails"
+      "info"
+      "specs"
+      "features"
+      "terms"
+      "inspection";
     gap: 14px;
   }
 
@@ -2993,11 +2973,31 @@ body:has(#vehicle-detail) em {
   }
 
   .detail-gallery {
-    grid-area: gallery;
+    display: contents;
+  }
+
+  .detail-image-wrap {
+    grid-area: gallery-image;
+  }
+
+  .detail-thumbnails {
+    grid-area: gallery-thumbnails;
   }
 
   .detail-main-info {
     grid-area: info;
+  }
+
+  .detail-features-block {
+    grid-area: features;
+  }
+
+  .cash-deal-card {
+    grid-area: terms;
+  }
+
+  .inspection-card {
+    grid-area: inspection;
   }
 
   .detail-cta .button {
@@ -3005,6 +3005,7 @@ body:has(#vehicle-detail) em {
   }
 
   .vehicle-page .spec-block {
+    grid-area: specs;
     margin-top: 4px;
     padding: 17px 16px 12px;
     border: 1px solid #e8e5dd;

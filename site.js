@@ -809,8 +809,14 @@ function setupVehiclePage() {
   const stickyWaBtn = document.getElementById("sticky-wa");
   if (stickyWaBtn) stickyWaBtn.href = waUrl;
 
+  const detailWaBtn = document.getElementById("detail-whatsapp");
+  if (detailWaBtn) detailWaBtn.href = waUrl;
+
   const stickyCallBtn = document.getElementById("sticky-call");
   if (stickyCallBtn) stickyCallBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
+
+  const detailCallBtn = document.getElementById("detail-call");
+  if (detailCallBtn) detailCallBtn.href = `tel:${DEALER.phone.replace(/\s+/g, "")}`;
 
   const emailBtn = document.getElementById("detail-email");
   if (emailBtn) {
