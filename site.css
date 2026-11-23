@@ -3004,6 +3004,11 @@ body:has(#vehicle-detail) em {
     flex: 1 1 auto;
   }
 
+  .detail-cta #detail-whatsapp,
+  .detail-cta #detail-call {
+    display: none;
+  }
+
   .vehicle-page .spec-block {
     grid-area: specs;
     margin-top: 4px;

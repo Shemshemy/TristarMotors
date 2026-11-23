@@ -684,7 +684,9 @@ function setupVehiclePage() {
 
   const stickyBar = document.querySelector(".mobile-sticky-bar");
   const relatedSection = document.querySelector("#related-cars");
+  const siteFooter = document.querySelector(".site-footer");
   let relatedSectionInView = false;
+  let footerInView = false;
   const setStickyVisible = (visible) => {
     if (!stickyBar) return;
     stickyBar.classList.toggle("is-visible", visible);
@@ -694,7 +696,7 @@ function setupVehiclePage() {
   };
   const updateStickyVisibility = () => {
     const mobile = window.matchMedia("(max-width: 768px)").matches;
-    setStickyVisible(mobile && !relatedSectionInView);
+    setStickyVisible(mobile && !relatedSectionInView && !footerInView);
   };
   if (stickyBar) {
     window.addEventListener("resize", updateStickyVisibility, { passive: true });
@@ -704,6 +706,13 @@ function setupVehiclePage() {
         updateStickyVisibility();
       });
       relatedObserver.observe(relatedSection);
+    }
+    if (siteFooter && "IntersectionObserver" in window) {
+      const footerObserver = new IntersectionObserver(([entry]) => {
+        footerInView = entry.isIntersecting;
+        updateStickyVisibility();
+      });
+      footerObserver.observe(siteFooter);
     }
     updateStickyVisibility();
   }
