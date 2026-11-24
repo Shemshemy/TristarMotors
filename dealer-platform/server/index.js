@@ -42,7 +42,9 @@ try {
   if (error.code !== "ENOENT") throw error;
 }
 const database = new InventoryDatabase(join(dataDirectory, "inventory.sqlite"));
-const backupTimer = scheduleBackups({ database, dataDirectory });
+const databasePath = join(dataDirectory, "inventory.sqlite");
+const backupOptions = { databasePath, dataDirectory };
+const backupTimer = scheduleBackups(backupOptions);
 const port = Number(production ? (process.env.PORT || 10000) : (process.env.API_PORT || 4174));
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error("The configured server port must be an integer between 1 and 65535.");
@@ -50,7 +52,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const server = createInventoryApi(database, {
   adminPassword: process.env.TRISTAR_ADMIN_PASSWORD,
   passwordFilePath: join(dataDirectory, "admin-password.json"),
-  createBackup: () => createBackup({ database, dataDirectory }),
+  createBackup: () => createBackup(backupOptions),
   uploadDirectory,
   staticDirectory: production
     ? fileURLToPath(new URL("../../public-site-dist", import.meta.url))

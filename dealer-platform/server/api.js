@@ -404,7 +404,7 @@ export function createInventoryApi(inventory, {
           send(response, 503, { error: "Backups are not configured on this server" });
           return;
         }
-        const snapshotPath = createBackup();
+        const snapshotPath = await createBackup();
         send(response, 201, { snapshot: basename(snapshotPath), createdAt: new Date().toISOString() });
         return;
       }
