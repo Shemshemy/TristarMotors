@@ -2235,6 +2235,26 @@ body:has(#vehicle-detail) em {
   background: var(--surface);
 }
 
+.used-car-note {
+  margin-top: 28px;
+  padding: 20px 22px;
+  border: 1px solid rgba(180, 134, 43, 0.25);
+  border-radius: 8px;
+  background: #faf8f4;
+}
+
+.used-car-note h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.used-car-note p {
+  margin: 0;
+  color: #5b5b5b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
 .inspection-list {
   list-style: none;
   padding: 0;
@@ -2267,6 +2287,19 @@ body:has(#vehicle-detail) em {
   margin-top: 64px;
   padding-top: 48px;
   border-top: 1px solid var(--border);
+}
+
+.related-section .section-head-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.related-section .section-head-split .button {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 .class-filter-bar {

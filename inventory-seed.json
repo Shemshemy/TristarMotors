@@ -23,8 +23,8 @@
       "/images/cars/c180_rear.jpg",
       "/images/cars/c180_interior.jpg"
     ],
-    "badge": "In Stock · Duty Paid",
-    "condition": "Accident Free · Grade 4.5 Import",
+    "badge": "Available",
+    "condition": "Pre-owned",
     "features": [
       "Avantgarde Exterior Styling & Grille",
       "Half Leather Ergonomic Seats",
@@ -40,7 +40,7 @@
     "vin": "",
     "status": "In Stock",
     "badges": [
-      "In Stock · Duty Paid"
+      "Available"
     ],
     "galleryByCategory": {
       "front": [
@@ -55,14 +55,7 @@
       ],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "e220d-all-terrain-2017",
@@ -89,7 +82,7 @@
       "/images/cars/e220d_cockpit.jpg"
     ],
     "badge": "Rare 4MATIC Wagon",
-    "condition": "Clean Title · High Spec",
+    "condition": "Pre-owned",
     "features": [
       "AIR BODY CONTROL Multi-Chamber Air Suspension",
       "All-Terrain 4MATIC All-Wheel Drive System",
@@ -120,14 +113,7 @@
       ],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "g350d-amg-2020",
@@ -154,7 +140,7 @@
       "/images/cars/g350d_rear.jpg"
     ],
     "badge": "Flagship G-Wagon",
-    "condition": "Showroom Condition · 1 Owner",
+    "condition": "Pre-owned",
     "features": [
       "AMG Line Bodystyling & Flared Wheel Arches",
       "20-inch AMG Multi-Spoke Titanium Grey Alloy Wheels",
@@ -184,14 +170,7 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "cls350-amg-2012",
@@ -217,7 +196,7 @@
       "/images/cars/cls350_rear.jpg"
     ],
     "badge": "4-Door Luxury Coupe",
-    "condition": "Accident Free · Duty Paid",
+    "condition": "Pre-owned",
     "features": [
       "Original AMG Sport Body Styling & Side Skirts",
       "Frameless Coupe Doors with Acoustic Glass",
@@ -246,14 +225,7 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "ml350-amg-2013",
@@ -279,7 +251,7 @@
       "/images/cars/ml350_rear.jpg"
     ],
     "badge": "4MATIC Luxury SUV",
-    "condition": "Full Service History · Clean Interior",
+    "condition": "Pre-owned",
     "features": [
       "AMG Sport Exterior Package & Front Apron",
       "Panoramic Sliding Panoramic Glass Roof",
@@ -308,14 +280,7 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "s320l-cdi-2008",
@@ -341,7 +306,7 @@
       "/images/cars/s320l_rear.jpg"
     ],
     "badge": "Executive LWB",
-    "condition": "Chauffeur Kept · Pristine Air Ride",
+    "condition": "Pre-owned",
     "features": [
       "Long Wheelbase with Generous Rear Legroom",
       "AIRMATIC Air Suspension with Level Control",
@@ -370,14 +335,7 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "c200-cgi-2012",
@@ -403,7 +361,7 @@
       "/images/cars/c200_rear.jpg"
     ],
     "badge": "Great Daily Driver",
-    "condition": "Accident Free · Ready in Yard",
+    "condition": "Pre-owned",
     "features": [
       "Avantgarde Sport Front Grille with Center Star",
       "17-inch Twin-Spoke Light Alloy Wheels",
@@ -432,14 +390,7 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   },
   {
     "id": "e200-kompressor-classic",
@@ -464,7 +415,7 @@
       "/images/cars/e200_classic.jpg"
     ],
     "badge": "Under KSh 1M · Classic",
-    "condition": "Very Well Kept · Solid Engine",
+    "condition": "Pre-owned",
     "features": [
       "Classic Twin Oval Headlight W210 Facelift Design",
       "M111 Supercharged Kompressor Engine",
@@ -490,13 +441,6 @@
       "interior": [],
       "other": []
     },
-    "frames": [],
-    "inspectionPoints": [
-      "Accident-Free: Original factory chassis alignment, zero structural repairs",
-      "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-      "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-      "Verified Odometer: Documented mileage and clean title certificate",
-      "Physical Inspection: Inspect and test drive at our Masaba Road yard"
-    ]
+    "frames": []
   }
 ]

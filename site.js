@@ -9,7 +9,7 @@ const DEALER = {
   whatsapp: "254734490475",
   email: "sales@tristarmotors.co.ke",
   address: "La Colline Garden, Masaba Road, Upper Hill, Nairobi, Kenya",
-  paymentNotice: "Outright Cash / Bank Wire (RTGS) / Banker's Cheque · Duty Paid in Full"
+  paymentNotice: "Contact us to discuss payment options"
 };
 
 let vehicles = [];
@@ -39,7 +39,6 @@ async function loadVehicles() {
         badge: car.status === "In Stock" ? (car.badge || car.badges?.[0] || "Available") : car.status,
         chassis: car.chassis || car.class || "Mercedes-Benz",
         features: Array.isArray(car.features) ? car.features : [],
-        inspectionPoints: Array.isArray(car.inspectionPoints) ? car.inspectionPoints : [],
       };
     });
 }
@@ -294,7 +293,7 @@ function renderVehicles() {
           </div>
           <div class="car-bottom">
             <div class="car-price-block">
-              <span class="car-price-label">Cash Price (Duty Paid)</span>
+              <span class="car-price-label">Asking price</span>
               <div class="car-price-status-row">
                 <strong class="car-price">${money(car.price)}</strong>
                 <span class="car-stock-status car-stock-${car.status === "Pending" ? "pending" : car.status === "Sold" ? "sold" : "available"}">${car.status === "In Stock" ? "AVAILABLE" : escapeHTML(car.status).toUpperCase()}</span>
@@ -665,9 +664,9 @@ function setupVehiclePage() {
   setText("detail-type", car.type);
   setText("detail-badge", car.badge);
   setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
-  setText("detail-condition", car.condition || "Duty Paid · Verified Provenance");
+  setText("detail-condition", car.condition || "Pre-owned");
   setText("detail-price", money(car.price));
-  setText("detail-description", car.description || "Immaculate pre-owned Mercedes-Benz with verified provenance, complete duty-paid documentation, and available for physical inspection at our Upper Hill showroom.");
+  setText("detail-description", car.description || "Pre-owned Mercedes-Benz available to view at our Upper Hill showroom. Get in touch to ask about this vehicle and the documents available.");
 
   // Technical Specs
   setText("detail-chassis", car.chassis || "Mercedes-Benz");
@@ -781,36 +780,6 @@ function setupVehiclePage() {
     `).join("");
   }
 
-  // Dynamic Inspection Guarantee Checkpoints
-  const inspectionHeading = document.getElementById("detail-inspection-heading");
-  const inspectionList = document.getElementById("detail-inspections");
-  const defaultInspectionPoints = [
-    "Accident-Free: Original factory chassis alignment, zero structural repairs",
-    "Diagnostics Clear: Full OBD-II scan on ECU, transmission, and electricals",
-    "Road Tested: Smooth 7G/9G-TRONIC shifting, silent suspension over road bumps",
-    "Verified Odometer: Documented mileage and clean title certificate",
-    "Physical Inspection: Inspect and test drive at our Masaba Road yard",
-  ];
-  const points = (Array.isArray(car.inspectionPoints) && car.inspectionPoints.length > 0)
-    ? car.inspectionPoints
-    : defaultInspectionPoints;
-  if (inspectionHeading) {
-    inspectionHeading.textContent = `${points.length}-Point Inspection Guarantee`;
-  }
-  if (inspectionList) {
-    inspectionList.innerHTML = points.map((p) => {
-      const colonIdx = p.indexOf(":");
-      const title = colonIdx > -1 ? p.slice(0, colonIdx) : p;
-      const desc = colonIdx > -1 ? p.slice(colonIdx + 1).trim() : "";
-      return `
-        <li>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <div><strong>${escapeHTML(title)}:</strong> ${escapeHTML(desc)}</div>
-        </li>
-      `;
-    }).join("");
-  }
-
   // Direct WhatsApp & Phone CTAs for Cash Deal
   const waMessage = `Hello Tristar Motors, I am asking about the ${car.year} Mercedes-Benz ${car.model}. Is it still available, and when can I view it?`;
   const waUrl = getWhatsAppUrl(waMessage);
@@ -873,7 +842,7 @@ function setupVehiclePage() {
           <h4 class="car-title" style="font-size: 16px; margin: 4px 0 10px;"><a href="/cars/${encodeURIComponent(r.id)}">${r.model}</a></h4>
           <div class="car-bottom">
             <div class="car-price-block">
-              <span class="car-price-label">Cash Price (Duty Paid)</span>
+              <span class="car-price-label">Asking price</span>
               <div class="car-price-status-row">
                 <strong class="car-price" style="font-size: 18px;">${money(r.price)}</strong>
                 <span class="car-stock-status car-stock-${r.status === "Pending" ? "pending" : r.status === "Sold" ? "sold" : "available"}">${r.status === "In Stock" ? "AVAILABLE" : escapeHTML(r.status).toUpperCase()}</span>
