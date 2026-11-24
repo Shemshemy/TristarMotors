@@ -219,11 +219,36 @@ export function createInventoryApi(inventory, {
     const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
     const template = await readFile(htmlPath, "utf8");
     const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(car.image, origin).href)}"><meta property="og:type" content="product"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(item)}</script>`;
-    const summary = `<section class="seo-vehicle-summary"><h1>${esc(title)}</h1><p>${esc(description)}</p><p>Price: KSh ${Number(car.price).toLocaleString("en-KE")} · Mileage: ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.transmission || "")}</p><img src="${esc(new URL(car.image, origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" width="800"><a href="https://wa.me/254734490475">Ask Tristar Motors about this vehicle</a></section>`;
-    const html = template.replace(/<title>.*?<\/title>/i, `<title>${esc(title)}</title>`)
+    let html = template.replace(/<title>.*?<\/title>/i, `<title>${esc(title)}</title>`)
       .replace(/<meta name="description"[^>]*>/i, "")
-      .replace("</head>", `${seo}</head>`)
-      .replace("</main>", `<noscript>${summary}</noscript></main>`);
+      .replace("</head>", `${seo}</head>`);
+    const setText = (id, value) => {
+      const pattern = new RegExp(`(<([a-z][a-z0-9:-]*)\\b[^>]*\\bid="${id}"[^>]*>)[\\s\\S]*?(<\\/\\2>)`, "i");
+      html = html.replace(pattern, (_match, opening, _tag, closing) => `${opening}${esc(value)}${closing}`);
+    };
+    setText("detail-title", `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`);
+    setText("detail-badge", car.badge || "Pre-owned Mercedes-Benz");
+    setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
+    setText("detail-price", `KSh ${Number(car.price).toLocaleString("en-KE")}`);
+    setText("detail-description", car.description || description);
+    setText("detail-mileage", `${Number(car.mileage).toLocaleString("en-KE")} km`);
+    setText("detail-type", car.body || car.type || "Not listed");
+    setText("detail-transmission", car.transmission || "Not listed");
+    setText("detail-fuel", car.fuel || "Not listed");
+    setText("detail-engine", car.engine || "Not listed");
+    setText("detail-drivetrain", car.drivetrain || "Not listed");
+    setText("detail-power", car.power || "Not listed");
+    setText("detail-acceleration", car.acceleration || "Not listed");
+    setText("detail-color", car.color || "Not listed");
+    setText("detail-chassis", car.chassis || "Not listed");
+    setText("detail-interior", car.interior || "Not listed");
+    setText("detail-condition", car.condition || "Pre-owned");
+    html = html.replace(/<img id="detail-image"[^>]*>/i,
+      `<img id="detail-image" src="${esc(new URL(car.image, origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" fetchpriority="high">`);
+    const featureList = Array.isArray(car.features) && car.features.length
+      ? car.features.map((feature) => `<li>${esc(feature)}</li>`).join("")
+      : `<li>Contact us for available vehicle details.</li>`;
+    html = html.replace(/(<ul\b[^>]*\bid="detail-features"[^>]*>)[\s\S]*?(<\/ul>)/i, `$1${featureList}$2`);
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
     response.end(request.method === "HEAD" ? undefined : html);
   };

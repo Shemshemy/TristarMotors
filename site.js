@@ -651,7 +651,7 @@ function setupVehiclePage() {
     return;
   }
 
-  document.title = `${car.year} Mercedes-Benz ${car.model} | Tristar Motors Nairobi`;
+  document.title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} for Sale in Nairobi | Tristar Motors`;
 
   const setText = (id, text) => {
     const el = document.getElementById(id);
@@ -834,7 +834,7 @@ function setupVehiclePage() {
       return `
       <article class="car-card">
         <a class="car-image-wrap" href="/cars/${encodeURIComponent(r.id)}">
-          <img class="car-image" src="${r.image}" alt="${r.model}" loading="lazy" draggable="false">
+          <img class="car-image" src="${r.image}" alt="${r.year} Mercedes-Benz ${r.model} exterior" loading="lazy" draggable="false">
           <span class="car-badge">${r.badge}</span>
         </a>
         <div class="car-info">
