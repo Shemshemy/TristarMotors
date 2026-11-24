@@ -3,8 +3,12 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InventoryDatabase } from "./inventory.js";
 import { createInventoryApi } from "./api.js";
+import { createBackup, restoreLatestBackup, scheduleBackups } from "./backup.js";
 
 const production = process.env.NODE_ENV === "production";
+if (production && !process.env.TRISTAR_DATA_DIR) {
+  throw new Error("Set TRISTAR_DATA_DIR to the mounted persistent disk path before starting in production.");
+}
 if (!production) {
   try {
     process.loadEnvFile(fileURLToPath(new URL("../.env.local", import.meta.url)));
@@ -25,6 +29,8 @@ const bundledUploadDirectory = production
   : fileURLToPath(new URL("../public/images/cars/uploads", import.meta.url));
 mkdirSync(dataDirectory, { recursive: true });
 mkdirSync(uploadDirectory, { recursive: true });
+const restoredBackup = restoreLatestBackup({ dataDirectory });
+if (restoredBackup) console.warn(`Inventory database was missing; restored the latest verified backup from ${restoredBackup}`);
 try {
   for (const entry of readdirSync(bundledUploadDirectory, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
@@ -38,6 +44,7 @@ try {
   if (error.code !== "ENOENT") throw error;
 }
 const database = new InventoryDatabase(join(dataDirectory, "inventory.sqlite"));
+const backupTimer = scheduleBackups({ database, dataDirectory });
 const port = Number(production ? (process.env.PORT || 10000) : (process.env.API_PORT || 4174));
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error("The configured server port must be an integer between 1 and 65535.");
@@ -45,6 +52,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const server = createInventoryApi(database, {
   adminPassword: process.env.TRISTAR_ADMIN_PASSWORD,
   passwordFilePath: join(dataDirectory, "admin-password.json"),
+  createBackup: () => createBackup({ database, dataDirectory }),
   uploadDirectory,
   staticDirectory: production
     ? fileURLToPath(new URL("../../public-site-dist", import.meta.url))
@@ -56,10 +64,12 @@ const server = createInventoryApi(database, {
 
 server.listen(port, production ? "0.0.0.0" : "127.0.0.1", () => {
   const host = production ? "0.0.0.0" : "127.0.0.1";
+  console.log(`Inventory database: ${join(dataDirectory, "inventory.sqlite")}`);
   console.log(`Tristar ${production ? "production server" : "local inventory API"} listening on ${host}:${port}`);
 });
 
 function shutdown() {
+  clearInterval(backupTimer);
   server.close(() => {
     database.close();
     process.exit(0);

@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { extname, join, resolve, sep } from "node:path";
+import { basename, extname, join, resolve, sep } from "node:path";
 import { AdminAuth } from "./auth.js";
 import { INVENTORY_STATUSES } from "./inventory.js";
 import { RateLimiter, getClientIp } from "./limiter.js";
@@ -189,6 +189,7 @@ export function createInventoryApi(inventory, {
   passwordFilePath,
   uploadDirectory,
   staticDirectory,
+  createBackup,
   allowRemote = false,
   rateLimiter = new RateLimiter(),
 } = {}) {
@@ -396,6 +397,15 @@ export function createInventoryApi(inventory, {
       }
       if (!auth.isAuthenticated(request)) {
         send(response, 401, { error: "Administrator sign-in is required" });
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/backups") {
+        if (!createBackup) {
+          send(response, 503, { error: "Backups are not configured on this server" });
+          return;
+        }
+        const snapshotPath = createBackup();
+        send(response, 201, { snapshot: basename(snapshotPath), createdAt: new Date().toISOString() });
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/auth/change-password") {

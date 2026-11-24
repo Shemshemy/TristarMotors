@@ -1115,6 +1115,46 @@ body.modal-open{overflow:hidden}
   margin:19px 0 14px;
   border-bottom:1px solid var(--line)
 }
+.admin-inventory-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.admin-inventory-tools form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 650px);
+}
+.admin-inventory-tools input {
+  min-width: 0;
+  min-height: 42px;
+  flex: 1 1 320px;
+  padding: 9px 12px;
+  border: 1px solid #dfe3dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #20251f;
+  font: inherit;
+}
+.admin-inventory-tools form .btn,
+.admin-inventory-tools form .table-action {
+  min-height: 42px;
+  white-space: nowrap;
+}
+.admin-inventory-tools > p {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #69716b;
+  font-size: 12px;
+}
+.admin-backup-note {
+  margin: 0 0 12px;
+  color: #69716b;
+  font-size: 12px;
+}
 .admin-tab {
   padding:11px 14px;
   border:0;
@@ -6287,12 +6327,19 @@ body,.app-home {
   .admin-metrics {
     grid-template-columns: 1fr 1fr;
   }
-  .admin-metric:last-child {
-    grid-column: 1 / -1;
-  }
+  .admin-metric:last-child { grid-column: auto; }
   .admin-tabs {
     overflow-x: auto;
   }
+  .admin-inventory-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-inventory-tools form {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .admin-inventory-tools form input { flex-basis: 100%; }
   .admin-tab {
     white-space: nowrap;
   }

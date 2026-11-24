@@ -59,7 +59,7 @@ export class InventoryDatabase {
     this.db = new DatabaseSync(filename);
     this.db.exec(`
       PRAGMA journal_mode = WAL;
-      PRAGMA synchronous = NORMAL;
+      PRAGMA synchronous = FULL;
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS inventory (
         id TEXT PRIMARY KEY,
