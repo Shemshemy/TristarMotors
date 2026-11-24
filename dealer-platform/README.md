@@ -19,7 +19,7 @@ For a password that should load automatically on later starts, put `TRISTAR_ADMI
 
 Open `http://127.0.0.1:4174` for the public website. Open `http://127.0.0.1:4174/#/admin` to sign in and manage cars. This builds the site and starts the website and local inventory API together. The dealer platform's old storefront is no longer used.
 
-Inventory and availability are stored in `data/inventory.sqlite`, and uploaded photos are stored in the ignored `data/uploads/` directory; both survive page reloads and server restarts. On startup, existing local upload files under `public/images/cars/uploads/` are copied into `data/uploads/` without overwriting existing files. The database starts with the eight cars currently shown on the main website. The admin page at `/#/admin` edits those same listings, including their photos, descriptions, specifications, prices, and availability. The first startup after this update removes the old sample cars and adds the current website cars. Other custom listings and uploaded photos are kept. In production, the server defaults to `/var/data` (or uses `TRISTAR_DATA_DIR` when explicitly set) and logs the database path at startup. The Render service must have its persistent disk mounted at `/var/data` so inventory changes survive restarts.
+Inventory and availability are stored in `data/inventory.sqlite`, and uploaded photos are stored in the ignored `data/uploads/` directory. Locally, these survive page reloads and server restarts. On startup, existing local upload files under `public/images/cars/uploads/` are copied into `data/uploads/` without overwriting existing files. The database starts with the eight cars currently shown on the main website. The admin page at `/#/admin` edits those same listings, including their photos, descriptions, specifications, prices, and availability. The first startup after this update removes the old sample cars and adds the current website cars. Other custom listings and uploaded photos are kept. In production, the server uses `TRISTAR_DATA_DIR` when set; otherwise it uses a temporary directory under the operating system's temp path. That is a temporary deployment setting: files stored there, including vehicle changes and photos, can disappear when the service restarts or is replaced. Set `TRISTAR_DATA_DIR` to a mounted persistent disk path once permanent hosting storage is available.
 
 ### Backups and recovery
 
@@ -58,9 +58,9 @@ Use a converted image in a listing with the public URL, for example `/images/car
 
 ## Render deployment
 
-The workspace-level `render.yaml` serves the public website from the repository root, so `/` opens the root `index.html` and `/#/admin` opens the admin sign-in. The inventory API and admin page run on the same service, with SQLite and uploaded photos on the persistent disk.
+The workspace-level `render.yaml` serves the public website from the repository root, so `/` opens the root `index.html` and `/#/admin` opens the admin sign-in. The inventory API and admin page run on the same Node service. The current temporary configuration stores SQLite and uploaded photos in ephemeral temporary storage; they can be lost on restart or service replacement. Add a persistent disk and set `TRISTAR_DATA_DIR` to its mount path when permanent hosting storage is ready.
 
-Render generates the `TRISTAR_ADMIN_PASSWORD` secret for the admin sign-in. The service requires a persistent disk for inventory and uploaded photos.
+Render generates the `TRISTAR_ADMIN_PASSWORD` secret for the admin sign-in. No persistent disk is required for the temporary configuration.
 
 Deploy the root website by pushing this workspace to your Git provider and creating a Render Blueprint from the repository root. The dealer-platform server can still be run locally with the commands above.
 

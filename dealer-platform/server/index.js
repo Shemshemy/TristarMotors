@@ -1,4 +1,5 @@
 import { constants, copyFileSync, mkdirSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InventoryDatabase } from "./inventory.js";
@@ -19,7 +20,7 @@ if (production && (!process.env.TRISTAR_ADMIN_PASSWORD || process.env.TRISTAR_AD
 }
 
 const dataDirectory = process.env.TRISTAR_DATA_DIR || (production
-  ? "/var/data"
+  ? join(tmpdir(), "tristar-motors-data")
   : fileURLToPath(new URL("../data", import.meta.url)));
 const uploadDirectory = join(dataDirectory, "uploads");
 const bundledUploadDirectory = production
