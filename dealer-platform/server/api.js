@@ -227,11 +227,32 @@ export function createInventoryApi(inventory, {
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
     response.end(request.method === "HEAD" ? undefined : html);
   };
-  const homePage = async (request, response) => {
+  const homePage = async (request, response, nonce) => {
     const filePath = staticFilePath(staticDirectory, "/index.html");
     let html = await readFile(filePath, "utf8");
-    const canonical = `${siteOrigin(request)}/`;
-    html = html.replace("</head>", `<link rel="canonical" href="${esc(canonical)}"></head>`);
+    const origin = siteOrigin(request);
+    const canonical = `${origin}/`;
+    const description = "Explore pre-owned Mercedes-Benz cars at Tristar Motors in Upper Hill, Nairobi. View available cars, prices and mileage, then contact us to arrange a visit.";
+    const dealership = {
+      "@context": "https://schema.org",
+      "@type": "AutoDealer",
+      name: "Tristar Motors",
+      url: canonical,
+      logo: `${origin}/Logos/tristar-black.png`,
+      image: `${origin}/images/cars/g350d_front.jpg`,
+      telephone: "+254734490475",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "La Colline Garden, Masaba Road, Upper Hill",
+        addressLocality: "Nairobi",
+        addressCountry: "KE",
+      },
+      areaServed: { "@type": "City", name: "Nairobi" },
+    };
+    const homepageSeo = `<meta property="og:url" content="${esc(canonical)}"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(dealership)}</script>`;
+    html = html.replace(/<link rel="canonical" href="[^"]*">/i, `<link rel="canonical" href="${esc(canonical)}">`)
+      .replace(/<meta name="description" content="[^"]*">/i, `<meta name="description" content="${esc(description)}">`)
+      .replace("</head>", `${homepageSeo}</head>`);
     const cars = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
@@ -349,7 +370,7 @@ export function createInventoryApi(inventory, {
           response.end();
           return;
         }
-        await homePage(request, response);
+        await homePage(request, response, nonce);
         return;
       }
       const vehicleRoute = url.pathname.match(/^\/cars\/([^/]+)$/);
