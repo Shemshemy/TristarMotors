@@ -6,9 +6,6 @@ import { createInventoryApi } from "./api.js";
 import { createBackup, restoreLatestBackup, scheduleBackups } from "./backup.js";
 
 const production = process.env.NODE_ENV === "production";
-if (production && !process.env.TRISTAR_DATA_DIR) {
-  throw new Error("Set TRISTAR_DATA_DIR to the mounted persistent disk path before starting in production.");
-}
 if (!production) {
   try {
     process.loadEnvFile(fileURLToPath(new URL("../.env.local", import.meta.url)));
@@ -21,8 +18,9 @@ if (production && (!process.env.TRISTAR_ADMIN_PASSWORD || process.env.TRISTAR_AD
   throw new Error("Set TRISTAR_ADMIN_PASSWORD to a secret of at least 12 characters in the production environment.");
 }
 
-const dataDirectory = process.env.TRISTAR_DATA_DIR ||
-  fileURLToPath(new URL("../data", import.meta.url));
+const dataDirectory = process.env.TRISTAR_DATA_DIR || (production
+  ? "/var/data"
+  : fileURLToPath(new URL("../data", import.meta.url)));
 const uploadDirectory = join(dataDirectory, "uploads");
 const bundledUploadDirectory = production
   ? fileURLToPath(new URL("../dist/images/cars/uploads", import.meta.url))
