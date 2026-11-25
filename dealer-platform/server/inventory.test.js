@@ -401,3 +401,136 @@ test("rate limiter throttles flooding requests with 429 Too Many Requests", asyn
     await new Promise((resolve, reject) => testServer.close((error) => error ? reject(error) : resolve()));
   }
 });
+
+test("stores Instagram imports as private drafts and keeps reviewer edits across duplicate imports", async () => {
+  const draft = {
+    mediaId: "test_shortcode_01",
+    shortcode: "test_shortcode_01",
+    caption: "2020 Mercedes-Benz C200, KES 4.5M",
+    date: "2026-10-01T10:00:00+00:00",
+    permalink: "https://www.instagram.com/p/test_shortcode_01/",
+    imageUrls: [],
+    parsed: { year: 2020, make: "Mercedes-Benz", model: "C200" },
+    year: 2020,
+    make: "Mercedes-Benz",
+    model: "C200",
+    price: 4_500_000,
+    mileage: null,
+  };
+
+  const unauthorized = await fetch(`${baseUrl}/api/instagram/drafts`);
+  assert.equal(unauthorized.status, 401);
+
+  const imported = await adminFetch("/api/instagram/drafts/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drafts: [draft] }),
+  });
+  assert.equal(imported.status, 200);
+  assert.deepEqual(await imported.json(), { imported: 1, received: 1 });
+
+  const listed = await adminFetch("/api/instagram/drafts");
+  assert.equal(listed.status, 200);
+  assert.equal((await listed.json())[0].mediaId, draft.mediaId);
+
+  const edit = await adminFetch(`/api/instagram/drafts/${draft.mediaId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: { model: "C200 Avantgarde", mileage: 72_000 } }),
+  });
+  assert.equal(edit.status, 200);
+  assert.equal((await edit.json()).model, "C200 Avantgarde");
+
+  const duplicate = await adminFetch("/api/instagram/drafts/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drafts: [draft] }),
+  });
+  assert.deepEqual(await duplicate.json(), { imported: 0, received: 1 });
+  assert.equal((await (await adminFetch("/api/instagram/drafts")).json())[0].model, "C200 Avantgarde");
+
+  const rejected = await adminFetch(`/api/instagram/drafts/${draft.mediaId}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(rejected.status, 200);
+  assert.deepEqual(await (await adminFetch("/api/instagram/drafts")).json(), []);
+});
+
+test("publishes a reviewed Instagram draft only after approval and copies its images to storage", async () => {
+  const mediaId = "approved_shortcode_01";
+  const pending = await adminFetch("/api/instagram/drafts/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drafts: [{
+      mediaId,
+      caption: "2020 Mercedes-Benz C200",
+      permalink: `https://www.instagram.com/p/${mediaId}/`,
+      imageUrls: ["https://scontent.cdninstagram.com/test-image.jpg"],
+    }] }),
+  });
+  assert.equal(pending.status, 200);
+  const carId = `instagram-${mediaId}`;
+  assert.equal(await database.get(carId), null, "an imported draft must not enter public inventory");
+
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (input, options) => {
+    if (String(input).startsWith("https://scontent.cdninstagram.com/")) {
+      return Promise.resolve(new Response(Buffer.from("mock-jpeg-bytes"), {
+        status: 200,
+        headers: { "Content-Type": "image/jpeg" },
+      }));
+    }
+    return realFetch(input, options);
+  };
+  try {
+    const response = await adminFetch(`/api/instagram/drafts/${mediaId}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ car: {
+        year: 2020, make: "Mercedes-Benz", model: "C200", price: 4_500_000,
+        mileage: 72_000, body: "Sedan", transmission: "Automatic", fuel: "Petrol",
+      } }),
+    });
+    assert.equal(response.status, 201);
+    const result = await response.json();
+    assert.equal(result.car.id, carId);
+    assert.equal(result.car.status, "In Stock");
+    assert.match(result.car.image, /^https:\/\/images\.example\.test\/cars\/instagram-/);
+    assert.equal(database.get(carId).status, "In Stock");
+    assert.deepEqual(await (await adminFetch("/api/instagram/drafts")).json(), []);
+    assert.ok([...uploadedObjects.keys()].some((key) => key.startsWith("cars/instagram-")));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("rejects untrusted Instagram draft images and prioritizes available cars in inventory", async () => {
+  const invalidDraft = await adminFetch("/api/instagram/drafts/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drafts: [{
+      mediaId: "unsafe_image_test", caption: "Post", imageUrls: ["https://example.invalid/image.jpg"],
+    }] }),
+  });
+  assert.equal(invalidDraft.status, 400);
+
+  for (const car of [
+    { id: "available-low-price", status: "In Stock", price: 1_000 },
+    { id: "sold-high-price", status: "Sold", price: 10_000_000 },
+    { id: "pending-mid-price", status: "Pending", price: 5_000_000 },
+  ]) {
+    const response = await adminFetch("/api/cars", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...car, year: 2024, make: "Test", model: car.id, mileage: 0 }),
+    });
+    assert.equal(response.status, 201);
+  }
+
+  const cars = await (await fetch(`${baseUrl}/api/cars`)).json();
+  const positions = Object.fromEntries(cars.map((car, index) => [car.id, index]));
+  assert.ok(positions["available-low-price"] < positions["sold-high-price"]);
+  assert.ok(positions["available-low-price"] < positions["pending-mid-price"]);
+});

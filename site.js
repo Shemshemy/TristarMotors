@@ -214,16 +214,15 @@ function renderVehicles() {
     return matchClass && matchMake && matchType && matchFuel && matchBudget && matchSaved;
   });
 
-  // Sort Logic
-  if (activeSort === "price-asc") {
-    results.sort((a, b) => a.price - b.price);
-  } else if (activeSort === "price-desc") {
-    results.sort((a, b) => b.price - a.price);
-  } else if (activeSort === "year-desc") {
-    results.sort((a, b) => b.year - a.year);
-  } else if (activeSort === "mileage-asc") {
-    results.sort((a, b) => parseInt(a.mileage.replace(/\D/g, "")) - parseInt(b.mileage.replace(/\D/g, "")));
-  }
+  // Availability always takes priority; the selected sort orders each status group.
+  const secondarySort = (a, b) => {
+    if (activeSort === "price-asc") return a.price - b.price;
+    if (activeSort === "price-desc") return b.price - a.price;
+    if (activeSort === "year-desc") return b.year - a.year;
+    if (activeSort === "mileage-asc") return parseInt(a.mileage.replace(/\D/g, "")) - parseInt(b.mileage.replace(/\D/g, ""));
+    return 0;
+  };
+  results.sort((a, b) => Number(b.status === "In Stock") - Number(a.status === "In Stock") || secondarySort(a, b));
 
   // Update Inventory Counts
   const countEl = document.querySelector("#result-count");

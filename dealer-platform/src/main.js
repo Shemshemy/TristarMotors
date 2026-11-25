@@ -25,6 +25,10 @@ let searchExpanded = false;
 let mobileCategory = "All";
 let inventoryLoaded = false;
 let adminSession = null;
+let instagramDrafts = [];
+let instagramDraftsLoaded = false;
+let instagramDraftsLoading = false;
+let instagramDraftsError = "";
 const photoCategories = [
   ["front", "Front"],
   ["side", "Side"],
@@ -603,6 +607,71 @@ function renderAdminLogin() {
   });
 }
 
+function renderInstagramDraftQueue() {
+  const cards = instagramDrafts.map((draft) => {
+    const image = draft.imageUrls?.[0];
+    const date = draft.date ? new Date(draft.date).toLocaleDateString() : "Date unavailable";
+    const parsedPrice = draft.price ?? "";
+    return `<article class="instagram-draft-card"><div class="instagram-draft-image">${image ? `<img src="${escapeHTML(image)}" alt="Instagram post preview" loading="lazy">` : `<span>No preview image</span>`}</div><div class="instagram-draft-content"><div class="instagram-draft-meta"><strong>${escapeHTML(date)}</strong><a href="${escapeHTML(draft.permalink || "#")}" target="_blank" rel="noopener noreferrer">Open Instagram post ↗</a></div><p class="instagram-draft-caption">${escapeHTML(draft.caption || "No caption")}</p><form class="instagram-draft-form" data-media-id="${escapeHTML(draft.mediaId)}"><div class="instagram-draft-fields"><label>Year<input name="year" inputmode="numeric" value="${escapeHTML(draft.year ?? "")}" placeholder="Year"></label><label>Make<input name="make" value="${escapeHTML(draft.make || "")}" placeholder="Make" required></label><label>Model<input name="model" value="${escapeHTML(draft.model || "")}" placeholder="Model" required></label><label>Price (KES)<input name="price" type="number" min="1" step="1" value="${escapeHTML(parsedPrice)}" placeholder="Confirm price"></label><label>Mileage (km)<input name="mileage" type="number" min="0" step="1" value="${escapeHTML(draft.mileage ?? "")}" placeholder="Mileage"></label><label>Body style<select name="body"><option value="Sedan" ${draft.body === "Sedan" ? "selected" : ""}>Sedan</option><option value="SUV" ${draft.body === "SUV" ? "selected" : ""}>SUV</option><option value="Coupe" ${draft.body === "Coupe" ? "selected" : ""}>Coupe</option><option value="Wagon" ${draft.body === "Wagon" ? "selected" : ""}>Wagon</option><option value="Roadster" ${draft.body === "Roadster" ? "selected" : ""}>Roadster</option></select></label></div><div class="instagram-draft-actions"><button class="btn btn-light" type="submit" data-review-action="save">Save draft edits</button><button class="btn btn-primary" type="submit" data-review-action="publish">Approve and add to site</button><button class="table-action delete" type="button" data-action="reject-instagram-draft" data-id="${escapeHTML(draft.mediaId)}">Reject</button></div><p class="instagram-draft-error" role="alert"></p></form></div></article>`;
+  }).join("");
+  const status = instagramDraftsError ? `<p class="instagram-drafts-error">Could not load drafts: ${escapeHTML(instagramDraftsError)}</p>` : instagramDraftsLoading ? `<p>Loading Instagram drafts…</p>` : "";
+  return `<section class="instagram-drafts-panel"><div class="instagram-drafts-heading"><div><p class="eyebrow">CONTENT REVIEW</p><h2>Instagram drafts <span>${instagramDrafts.length}</span></h2><p>Scraped posts stay here until you approve them. Confirm the vehicle details and price before publishing.</p></div><button class="btn btn-light" type="button" data-action="refresh-instagram-drafts">Refresh drafts</button></div><div class="instagram-scraper-help"><strong>Collect the last six months:</strong> start the local site, then run <code>python3 script/main.py --admin-import</code>. The scraper sends posts into this queue; reruns skip existing drafts by Instagram post ID.</div>${status}${cards || (instagramDraftsLoaded && !instagramDraftsError ? `<p class="instagram-drafts-empty">No Instagram drafts are waiting for review.</p>` : "")}</section>`;
+}
+
+async function refreshInstagramDrafts() {
+  instagramDraftsLoaded = false;
+  instagramDraftsLoading = true;
+  instagramDraftsError = "";
+  renderAdmin();
+  try {
+    instagramDrafts = await apiRequest("/api/instagram/drafts");
+    instagramDraftsLoaded = true;
+  } catch (error) {
+    instagramDraftsError = error.message;
+    instagramDraftsLoaded = true;
+  }
+  instagramDraftsLoading = false;
+  if (route().startsWith("#/admin")) renderAdmin();
+}
+
+async function handleInstagramDraftSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const mediaId = form.dataset.mediaId;
+  const action = event.submitter?.dataset.reviewAction || "save";
+  const data = new FormData(form);
+  const fields = {
+    year: data.get("year") ? Number(data.get("year")) : null,
+    make: String(data.get("make") || "").trim(),
+    model: String(data.get("model") || "").trim(),
+    price: data.get("price") ? Number(data.get("price")) : null,
+    mileage: data.get("mileage") ? Number(data.get("mileage")) : null,
+    body: String(data.get("body") || "Sedan"),
+  };
+  const errorNode = form.querySelector(".instagram-draft-error");
+  const buttons = [...form.querySelectorAll("button")];
+  errorNode.textContent = "";
+  buttons.forEach((button) => { button.disabled = true; });
+  try {
+    if (action === "publish") {
+      const draft = instagramDrafts.find((item) => item.mediaId === mediaId);
+      const result = await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ car: { ...fields, trim: draft?.parsed?.trim || "", transmission: "Automatic", engine: "", fuel: "Petrol", class: "Mercedes-Benz", description: draft?.caption || "" } }),
+      });
+      store.cars = [result.car, ...store.cars.filter((car) => car.id !== result.car.id)];
+      toast("Approved and added to the site");
+    } else {
+      await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}`, { method: "PATCH", body: JSON.stringify({ fields }) });
+      toast("Draft edits saved");
+    }
+    await refreshInstagramDrafts();
+  } catch (error) {
+    errorNode.textContent = error.message;
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
 function renderAdmin(){
   disposeViewer?.();disposeViewer=null;
   if (adminSession === null) {
@@ -620,6 +689,21 @@ function renderAdmin(){
     renderAdminLogin();
     return;
   }
+  if (!instagramDraftsLoaded && !instagramDraftsLoading) {
+    instagramDraftsLoading = true;
+    apiRequest("/api/instagram/drafts").then((drafts) => {
+      instagramDrafts = drafts;
+      instagramDraftsError = "";
+      instagramDraftsLoaded = true;
+      instagramDraftsLoading = false;
+      if (route().startsWith("#/admin")) renderAdmin();
+    }).catch((error) => {
+      instagramDraftsError = error.message;
+      instagramDraftsLoaded = true;
+      instagramDraftsLoading = false;
+      if (route().startsWith("#/admin")) renderAdmin();
+    });
+  }
   const edit=editId?carById(editId):null;
   const filteredCars = store.cars.filter((car) => {
     if (!adminSearchQuery) return true;
@@ -628,6 +712,8 @@ function renderAdmin(){
   });
   const rows=filteredCars.map(car=>`<tr><td>${car.year} ${escapeHTML(car.make)} ${escapeHTML(car.model)}</td><td>${escapeHTML(car.vin||"—")}</td><td>${priceLabel(car.price)}</td><td>${number(car.mileage)} km</td><td>${statusControl(car)}</td><td><div class="table-actions"><button class="table-action" data-action="edit-car" data-id="${escapeHTML(car.id)}">Edit</button><button class="table-action delete" data-action="delete-car" data-id="${escapeHTML(car.id)}">Remove</button></div></td></tr>`).join("");
   app.innerHTML=`${header()}<main class="shell admin-shell"><div class="admin-top"><div><p class="eyebrow">DEALER ADMIN</p><h1>Car listings</h1><p class="text-muted" style="font-size:11px">Manage car listings and availability.</p></div><div class="admin-session-actions"><button class="btn btn-primary" type="button" data-action="open-vehicle-modal">Add a car <span aria-hidden="true">+</span></button><button class="btn btn-light" type="button" data-action="open-password-dialog">Change password</button></div></div><div class="admin-notice">Changes here update the cars shown on the website. Only share the admin password with people who should manage listings.</div><div class="admin-metrics"><div class="admin-metric"><span>Available vehicles</span><strong>${store.cars.filter(c=>c.status==="In Stock").length}</strong></div><div class="admin-metric"><span>Sold vehicles</span><strong>${store.cars.filter(c=>c.status==="Sold").length}</strong></div></div><div class="admin-inventory-tools"><form id="admin-car-search-form" role="search"><label class="sr-only" for="admin-car-search">Search cars</label><input id="admin-car-search" name="query" type="search" value="${escapeHTML(adminSearchInput)}" placeholder="Search by car, VIN, fuel, or status"><button class="btn btn-light" type="submit">Search cars</button>${adminSearchQuery?`<button class="table-action" id="clear-admin-car-search" type="button">Clear</button>`:""}</form><p>${filteredCars.length} of ${store.cars.length} cars</p></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Vehicle</th><th>VIN</th><th>Price</th><th>Mileage</th><th>Availability</th><th>Actions</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${adminSearchQuery?"No cars match that search.":"No vehicles in inventory."}</td></tr>`}</tbody></table></div>${(edit||vehicleModalOpen)?`<dialog class="vehicle-modal" id="vehicle-editor" aria-labelledby="vehicle-modal-title"><section class="admin-form-card"><div class="vehicle-modal-heading"><div><p class="eyebrow">${edit?"UPDATE LISTING":"NEW LISTING"}</p><h2 id="vehicle-modal-title">${edit?"Edit Mercedes-Benz Listing":"Add a Mercedes-Benz"}</h2></div><button type="button" class="vehicle-modal-close" data-action="close-vehicle-modal" aria-label="Close">×</button></div><div class="vehicle-step-indicator"><span class="active" data-step-indicator="details">1. Vehicle details</span><span data-step-indicator="photos">2. Add pictures</span></div><p class="draft-autosave-note">Your progress is saved on this device and restored if you refresh.</p><form id="car-form" data-id="${edit?escapeHTML(edit.id):""}"><p class="car-form-error" data-car-form-error role="alert" hidden></p><section class="vehicle-form-step" data-vehicle-step="details"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">Car basics</strong></div><div class="admin-form-grid"><label class="field"><span class="field-label">Model Year</span><input name="year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="${escapeHTML(edit?.year??"")}" required placeholder="e.g. 2002" autocomplete="off"></label><label class="field"><span class="field-label">Class</span><input name="class" list="mercedes-class-suggestions" placeholder="Type or choose e.g. GL &amp; ML" value="${escapeHTML(edit?.class||"")}" required autocomplete="off"><datalist id="mercedes-class-suggestions">${MERCEDES_CLASSES.map(value=>`<option value="${escapeHTML(value)}"></option>`).join("")}</datalist></label><label class="field"><span class="field-label">Model</span><input name="model" list="mercedes-model-suggestions" placeholder="Pick or type e.g. C180 Avantgarde" value="${escapeHTML(edit?.model||"")}" required autocomplete="off"><datalist id="mercedes-model-suggestions">${MERCEDES_MODELS.map(m=>`<option value="${escapeHTML(m)}"></option>`).join("")}</datalist></label>${selectField("body","Body style",["Sedan","SUV","Coupe","Wagon","Roadster"],edit?.body||"",true)}${selectField("status","Availability",["In Stock","Pending","Sold"],edit?.status||"",true)}${priceInputField(edit?.price)}${inputField("mileage","Mileage (km)",edit?.mileage??"","number","required min=0 placeholder='e.g. 78200'")}</div></div><details class="admin-form-section"><summary>Vehicle specifications and condition (optional)</summary><div class="admin-form-section-body"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">2. Powertrain &amp; Styling</strong></div><div class="admin-form-grid">${selectField("transmission","Transmission",["7G-TRONIC Plus Auto","9G-TRONIC Auto","8G-DCT Dual-Clutch","7G-DCT Dual-Clutch","Automatic","Manual"],edit?.transmission||"")}${selectField("drivetrain","Drivetrain",["RWD","4MATIC","AWD","FWD"],canonicalDrivetrain(edit?.drivetrain)||"")}${selectField("fuel","Fuel Type",["Petrol","Diesel","Hybrid","Plug-in Hybrid"],edit?.fuel||"")}<label class="field"><span class="field-label">Engine</span><input name="engine" list="mercedes-engine-suggestions" placeholder="Pick or type e.g. 2.0L Turbo M274 (184 hp)" value="${escapeHTML(edit?.engine||"")}"><datalist id="mercedes-engine-suggestions">${MERCEDES_ENGINES.map(e=>`<option value="${escapeHTML(e)}"></option>`).join("")}</datalist></label>${selectField("color","Exterior Colour",MERCEDES_COLORS,edit?.color||"")}${selectField("interior","Interior",MERCEDES_INTERIORS,edit?.interior||"")}${selectField("condition","Condition / Provenance",MERCEDES_CONDITIONS,edit?.condition||"")}</div></div></details><details class="admin-form-section"><summary>Features and description (optional)</summary><div class="admin-form-section-body"><div style="margin-bottom:14px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="display:inline-block;width:4px;height:14px;background:#b4862b;border-radius:2px"></span><strong style="font-size:12px;color:#111;text-transform:uppercase;letter-spacing:0.04em">3. Features &amp; Description</strong></div>${featuresField(edit?.features||[])}${descriptionField(edit?.description||"")}</div></details><details style="margin-top:10px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;padding:10px 14px"><summary style="font-size:12px;font-weight:600;color:#4b5563;cursor:pointer">⚙ Optional Fields (VIN, Trim, Power, 0–100 km/h, Badge tags, 360)</summary><div class="admin-form-grid" style="margin-top:10px">${inputField("vin","VIN",edit?.vin||"","text","placeholder='Optional'")}${selectField("chassis","Chassis Code",MERCEDES_CHASSIS,edit?.chassis||"")}${inputField("trim","Trim Level",edit?.trim||"","text","placeholder='e.g. Avantgarde, AMG Line'")}${inputField("power","Engine Power",edit?.power||"","text","placeholder='e.g. 184 hp / 300 Nm'")}${inputField("acceleration","0–100 km/h",edit?.acceleration||"","text","placeholder='e.g. 7.9s'")}${selectField("badges","Badge Tag",["Available for viewing","New arrival","Low mileage"],(edit?.badges||[])[0]||"Available for viewing")}${inputField("image","Primary Cloudflare Image URL",edit?.image||"","text","placeholder='Auto-filled when uploading a Front photo'")}${inputField("frameBase","360 Frame Base URL",edit?.frameBase||"","text","placeholder='Optional'")}</div></details><input type="hidden" name="make" value="Mercedes-Benz"></section><section class="vehicle-form-step" data-vehicle-step="photos"><section class="gallery-upload-editor"><h3>Vehicle pictures</h3><p>Choose photos, check the previews, then upload them.</p><div id="gallery-upload-workspace"></div></section><p class="required-note">Upload at least one Front photo to Cloudflare (or set a Cloudflare image URL) before saving. After uploading, choose Save vehicle to attach the photos to this listing.</p></section><div class="vehicle-step-actions" data-step-actions="details"><button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button><button class="btn btn-primary" type="button" data-action="vehicle-step-next">Next: add pictures <span aria-hidden="true">→</span></button></div><div class="modal-actions vehicle-step-actions" data-step-actions="photos" hidden><button class="btn btn-light" type="button" data-action="vehicle-step-back">← Back to details</button><button class="btn btn-primary" id="save-vehicle-button" type="submit">${edit?"Save changes":"Save vehicle"}</button>${edit?`<button class="btn btn-light" type="button" data-action="close-vehicle-modal">Cancel</button>`:""}</div></form></section></dialog>`:""}${passwordChangeDialog()}</main>${footer()}<div class="toast hidden"></div>`;
+  app.querySelector(".admin-notice")?.insertAdjacentHTML("afterend", renderInstagramDraftQueue());
+  app.querySelectorAll(".instagram-draft-form").forEach((form) => form.addEventListener("submit", handleInstagramDraftSubmit));
   applyRestoredVehicleForm();
   renderGalleryUploadWorkspace();
   wireCommon();
@@ -976,6 +1062,14 @@ function handleClick(event){
   const fav=event.target.closest("[data-favorite]");if(fav){const id=fav.dataset.favorite;store.favorites=store.favorites.includes(id)?store.favorites.filter(v=>v!==id):[...store.favorites,id];save();const detail=route().match(/^#\/cars\/([^/?]+)/);detail?renderVehicle(detail[1]):renderHome();return;}
   const button=event.target.closest("[data-action]");if(!button)return;
   const action=button.dataset.action,id=button.dataset.id||button.dataset.car;
+  if(action==="refresh-instagram-drafts"){refreshInstagramDrafts();return;}
+  if(action==="reject-instagram-draft"){
+    button.disabled=true;
+    apiRequest(`/api/instagram/drafts/${encodeURIComponent(id)}/reject`,{method:"POST",body:JSON.stringify({})})
+      .then(()=>{instagramDrafts=instagramDrafts.filter(draft=>draft.mediaId!==id);renderAdmin();toast("Instagram draft rejected");})
+      .catch(error=>{button.disabled=false;toast(`Could not reject draft: ${error.message}`);});
+    return;
+  }
   if(action==="open-password-dialog"){document.querySelector("#password-change-dialog")?.showModal();lockPageScroll();return;}
   if(action==="close-password-dialog"){document.querySelector("#password-change-dialog")?.close();unlockPageScroll();return;}
   if(action==="open-vehicle-modal"){vehicleModalOpen=true;editId=null;vehicleStep="details";uploadProgress=null;photoUploadMessage="Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.";draftGallery=emptyDraftGallery();pendingPhotoFiles=emptyDraftGallery();void clearVehicleDraft();renderAdmin();setVehicleStep("details");return;}
