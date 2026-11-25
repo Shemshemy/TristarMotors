@@ -409,7 +409,7 @@ test("stores Instagram imports as private drafts and keeps reviewer edits across
     caption: "2020 Mercedes-Benz C200, KES 4.5M",
     date: "2026-10-01T10:00:00+00:00",
     permalink: "https://www.instagram.com/p/test_shortcode_01/",
-    imageUrls: [],
+    imageUrls: Array.from({ length: 12 }, (_, index) => `https://scontent.cdninstagram.com/test-image-${index}.jpg`),
     parsed: { year: 2020, make: "Mercedes-Benz", model: "C200" },
     year: 2020,
     make: "Mercedes-Benz",
@@ -441,13 +441,24 @@ test("stores Instagram imports as private drafts and keeps reviewer edits across
   assert.equal(edit.status, 200);
   assert.equal((await edit.json()).model, "C200 Avantgarde");
 
+  const mediaEdit = await adminFetch(`/api/instagram/drafts/${draft.mediaId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: { imageUrls: draft.imageUrls } }),
+  });
+  assert.equal(mediaEdit.status, 200);
+  assert.equal((await mediaEdit.json()).imageUrls.length, 12);
+
+  const completeAlbumDraft = { ...draft, imageUrls: Array.from({ length: 14 }, (_, index) => `https://scontent.cdninstagram.com/complete-${index}.jpg`) };
   const duplicate = await adminFetch("/api/instagram/drafts/import", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ drafts: [draft] }),
+    body: JSON.stringify({ drafts: [completeAlbumDraft] }),
   });
   assert.deepEqual(await duplicate.json(), { imported: 0, received: 1 });
-  assert.equal((await (await adminFetch("/api/instagram/drafts")).json())[0].model, "C200 Avantgarde");
+  const refreshed = (await (await adminFetch("/api/instagram/drafts")).json())[0];
+  assert.equal(refreshed.model, "C200 Avantgarde");
+  assert.equal(refreshed.imageUrls.length, 14);
 
   const rejected = await adminFetch(`/api/instagram/drafts/${draft.mediaId}/reject`, {
     method: "POST",

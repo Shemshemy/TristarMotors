@@ -295,10 +295,10 @@ def post_image_urls(post: instaloader.Post) -> list[str]:
     node = post._node
     carousel = node.get("carousel_media") or []
     if carousel:
-        return [url for url in (image_url(item) for item in carousel) if url][:10]
+        return [url for url in (image_url(item) for item in carousel) if url][:20]
     edges = node.get("edge_sidecar_to_children", {}).get("edges", [])
     if edges:
-        return [url for url in (image_url(edge.get("node", {})) for edge in edges) if url][:10]
+        return [url for url in (image_url(edge.get("node", {})) for edge in edges) if url][:20]
     url = image_url(node)
     return [url] if url else []
 

@@ -503,12 +503,12 @@ export function createInventoryApi(inventory, {
             return;
           }
           const mediaId = String(value.mediaId || "").trim();
-          if (!/^[A-Za-z0-9_-]{1,100}$/.test(mediaId) || !Array.isArray(value.imageUrls) || value.imageUrls.length > 10 ||
+          if (!/^[A-Za-z0-9_-]{1,100}$/.test(mediaId) || !Array.isArray(value.imageUrls) || value.imageUrls.length > 20 ||
               value.imageUrls.some((image) => !validInstagramImageUrl(image)) || typeof value.caption !== "string" || value.caption.length > 20_000) {
             send(response, 400, { error: "Instagram draft has invalid media, caption, or image data" });
             return;
           }
-          drafts.push({ ...value, mediaId, imageUrls: value.imageUrls.slice(0, 10) });
+          drafts.push({ ...value, mediaId, imageUrls: value.imageUrls.slice(0, 20) });
         }
         const imported = await inventory.importInstagramDrafts(drafts);
         send(response, 200, { imported, received: drafts.length });
@@ -521,10 +521,13 @@ export function createInventoryApi(inventory, {
         if (!current || current.reviewStatus !== "pending") { send(response, 404, { error: "Pending Instagram draft not found" }); return; }
         const body = await readJson(request);
         const values = body.fields;
-        const allowed = new Set(["year", "make", "model", "trim", "price", "mileage", "body"]);
+        const allowed = new Set(["year", "make", "model", "trim", "price", "mileage", "body", "imageUrls"]);
         if (!values || typeof values !== "object" || Array.isArray(values) || Object.keys(values).some((field) => !allowed.has(field))) {
           send(response, 400, { error: "Draft edits contain unsupported fields" });
           return;
+        }
+        if (values.imageUrls !== undefined && (!Array.isArray(values.imageUrls) || values.imageUrls.length > 20 || values.imageUrls.some((image) => !validInstagramImageUrl(image)))) {
+          send(response, 400, { error: "Draft images must contain up to 20 valid Instagram image URLs" }); return;
         }
         for (const key of ["year", "price", "mileage"]) {
           if (values[key] === "" || values[key] === null) values[key] = null;
