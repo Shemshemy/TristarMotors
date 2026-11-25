@@ -19,6 +19,20 @@ For a password that should load automatically on later starts, put `TRISTAR_ADMI
 
 Open `http://127.0.0.1:4174` for the public website. Open `http://127.0.0.1:4174/#/admin` to sign in and manage cars. This builds the site and starts the website and local inventory API together. The dealer platform's old storefront is no longer used.
 
+### Import Instagram posts for review
+
+The admin page has an **Instagram drafts** queue. To collect every post on Tristar Motors' Instagram profile from the last six months and send it to the queue, start the local site, install the scraper dependency, then run this from the repository root:
+
+```bash
+python3 -m venv .venv-instagram
+.venv-instagram/bin/pip install -r script/requirements.txt
+.venv-instagram/bin/python script/main.py --admin-import
+```
+
+The scraper reads `TRISTAR_ADMIN_PASSWORD` from the environment or ignored `dealer-platform/.env.local`, logs into the local admin API, collects post captions, dates, permalinks, and available image URLs, and saves drafts keyed by Instagram post ID. Reruns skip existing drafts so they do not overwrite your review edits. It does not publish listings. You can set `TRISTAR_ADMIN_API_URL` to an HTTPS admin API URL when importing into a deployed site; use a trusted network and keep the admin password private. If Instagram requires authentication to read the profile, first sign in normally to the intended Instagram account in a supported local browser, then try importing that browser session with `.venv-instagram/bin/instaloader --load-cookies BROWSER_NAME --login=YOUR_INSTAGRAM_USERNAME`. Use a browser name supported by `.venv-instagram/bin/instaloader --help`; this reads browser cookies, not the browser's saved password. Instaloader saves a session file for later reuse. Set `INSTAGRAM_USERNAME` in your local environment and, if you save it somewhere non-default, set `INSTAGRAM_SESSION_FILE` to its path. Keep session and cookie files private. The scraper prints progress stages and clearer next steps on common session, profile, and date errors. Instagram can limit automated requests, so an interrupted run can be retried safely.
+
+Every imported post appears in the admin review queue, including posts whose captions could not be parsed. Correct the year, make, model, asking price, and mileage in the queue, save any changes, then choose **Approve and add to site**. Approval uploads the post's images to the configured object storage and creates an available listing. Posts without a usable image or confirmed price cannot be published from the queue. Rejected posts are retained as rejected records and do not reappear as pending drafts on later imports.
+
 When `DATABASE_URL` is set, inventory is stored in PostgreSQL. Without it, local development uses `dealer-platform/data/inventory.sqlite`. Startup creates missing tables and inserts starter listings only when their IDs do not already exist, preserving listing data and availability. Production requires `DATABASE_URL` and the five S3 settings in `.env.example`; uploads are WebP objects stored in the bucket, and the database stores their full public URLs. Production inventory and uploads are not written to the Render filesystem.
 
 For the live Render service, the browser export can capture all admin-visible inventory and referenced same-site car images, convert images to WebP in memory, and package them into one private `inventory.json`. While signed into the live admin, paste `server/export-live-inventory-browser.js` into that tab's DevTools Console. Save the downloaded file to `/tmp/tristar-live-export/inventory.json`. This avoids SSH and a second password login. The command-line exporter remains available for old `/images/cars/uploads/` files when the source password is known; set `TRISTAR_SOURCE_ADMIN_PASSWORD` in the ignored `dealer-platform/.env.local` and run from the repository root:

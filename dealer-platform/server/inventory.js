@@ -42,6 +42,7 @@ export class InventoryDatabase {
         client = await store.pool.connect();
         await client.query(`CREATE TABLE IF NOT EXISTS inventory (id TEXT PRIMARY KEY, data_json JSONB NOT NULL, status TEXT NOT NULL CHECK (status IN ('In Stock','Pending','Sold')), created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
         await client.query(`CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+        await client.query(`CREATE TABLE IF NOT EXISTS instagram_drafts (media_id TEXT PRIMARY KEY, data_json JSONB NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','rejected','published')), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
         const { rows } = await client.query("SELECT value FROM app_meta WHERE key = 'website_inventory_v1'");
         if (!rows.length) {
           await client.query("BEGIN");
@@ -81,7 +82,7 @@ export class InventoryDatabase {
   initializeSqlite(filename) {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new DatabaseSync(filename);
-    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS inventory (id TEXT PRIMARY KEY,data_json TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('In Stock','Pending','Sold'))); CREATE TABLE IF NOT EXISTS app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);`);
+    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS inventory (id TEXT PRIMARY KEY,data_json TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('In Stock','Pending','Sold'))); CREATE TABLE IF NOT EXISTS app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS instagram_drafts(media_id TEXT PRIMARY KEY,data_json TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','rejected','published')),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);
     const migrated = this.db.prepare("SELECT value FROM app_meta WHERE key='website_inventory_v1'").get();
     if (!migrated) {
       const insert = this.db.prepare("INSERT OR IGNORE INTO inventory VALUES(?,?,?)");
@@ -101,8 +102,64 @@ export class InventoryDatabase {
   }
 
   list() {
-    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY created_at,id").then(({ rows }) => rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status })));
-    return this.db.prepare("SELECT data_json,status FROM inventory ORDER BY rowid").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status }));
+    const order = (cars) => cars.sort((a, b) => Number(b.status === "In Stock") - Number(a.status === "In Stock"));
+    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY created_at,id").then(({ rows }) => order(rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status }))));
+    return order(this.db.prepare("SELECT data_json,status FROM inventory ORDER BY rowid").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status })));
+  }
+
+  async listInstagramDrafts() {
+    if (this.pool) {
+      const { rows } = await this.pool.query("SELECT media_id,data_json,status,created_at FROM instagram_drafts WHERE status='pending' ORDER BY created_at DESC");
+      return rows.map((row) => ({ ...row.data_json, mediaId: row.media_id, reviewStatus: row.status, importedAt: row.created_at }));
+    }
+    return this.db.prepare("SELECT media_id,data_json,status,created_at FROM instagram_drafts WHERE status='pending' ORDER BY created_at DESC").all()
+      .map((row) => ({ ...JSON.parse(row.data_json), mediaId: row.media_id, reviewStatus: row.status, importedAt: row.created_at }));
+  }
+
+  async importInstagramDrafts(drafts) {
+    let imported = 0;
+    for (const draft of drafts) {
+      const id = String(draft.mediaId);
+      if (this.pool) {
+        const result = await this.pool.query("INSERT INTO instagram_drafts(media_id,data_json) VALUES($1,$2) ON CONFLICT(media_id) DO NOTHING", [id, draft]);
+        if (result.rowCount) imported += 1;
+      } else {
+        const result = this.db.prepare("INSERT INTO instagram_drafts(media_id,data_json) VALUES(?,?) ON CONFLICT(media_id) DO NOTHING").run(id, JSON.stringify(draft));
+        if (result.changes) imported += 1;
+      }
+    }
+    return imported;
+  }
+
+  async getInstagramDraft(mediaId) {
+    if (this.pool) {
+      const { rows } = await this.pool.query("SELECT media_id,data_json,status FROM instagram_drafts WHERE media_id=$1", [mediaId]);
+      const row = rows[0];
+      return row ? { ...row.data_json, mediaId: row.media_id, reviewStatus: row.status } : null;
+    }
+    const row = this.db.prepare("SELECT media_id,data_json,status FROM instagram_drafts WHERE media_id=?").get(mediaId);
+    return row ? { ...JSON.parse(row.data_json), mediaId: row.media_id, reviewStatus: row.status } : null;
+  }
+
+  async updateInstagramDraft(mediaId, draft) {
+    if (this.pool) {
+      const { rows } = await this.pool.query("UPDATE instagram_drafts SET data_json=$2,updated_at=now() WHERE media_id=$1 AND status='pending' RETURNING media_id,data_json,status", [mediaId, draft]);
+      const row = rows[0];
+      return row ? { ...row.data_json, mediaId: row.media_id, reviewStatus: row.status } : null;
+    }
+    const result = this.db.prepare("UPDATE instagram_drafts SET data_json=?,updated_at=CURRENT_TIMESTAMP WHERE media_id=? AND status='pending'").run(JSON.stringify(draft), mediaId);
+    return result.changes ? this.getInstagramDraft(mediaId) : null;
+  }
+
+  async setInstagramDraftStatus(mediaId, status, carId = null) {
+    const draft = await this.getInstagramDraft(mediaId);
+    if (!draft || draft.reviewStatus !== "pending") return false;
+    if (carId) draft.publishedCarId = carId;
+    if (this.pool) {
+      const { rowCount } = await this.pool.query("UPDATE instagram_drafts SET status=$2,data_json=$3,updated_at=now() WHERE media_id=$1 AND status='pending'", [mediaId, status, draft]);
+      return rowCount > 0;
+    }
+    return this.db.prepare("UPDATE instagram_drafts SET status=?,data_json=?,updated_at=CURRENT_TIMESTAMP WHERE media_id=? AND status='pending'").run(status, JSON.stringify(draft), mediaId).changes > 0;
   }
 
   get(id) {

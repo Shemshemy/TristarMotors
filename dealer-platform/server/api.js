@@ -46,6 +46,36 @@ function publicCar(car) {
   return Object.fromEntries(Object.entries(car).filter(([field]) => PUBLIC_CAR_FIELDS.has(field)));
 }
 
+const DRAFT_FIELDS = new Set(["mediaId", "shortcode", "caption", "date", "permalink", "imageUrls", "parsed", "year", "make", "model", "price", "mileage", "body", "trim"]);
+const INSTAGRAM_IMAGE_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com"];
+
+function validInstagramImageUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && INSTAGRAM_IMAGE_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`));
+  } catch { return false; }
+}
+
+async function importInstagramImage(url, objectStorage) {
+  if (!validInstagramImageUrl(url)) throw Object.assign(new Error("Instagram image URL is not allowed"), { status: 400 });
+  const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(20_000) });
+  if (!response.ok) throw Object.assign(new Error("Could not download an Instagram image; re-import the post and try again"), { status: 502 });
+  const contentType = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
+  const extensions = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+  if (!extensions[contentType]) throw Object.assign(new Error("Instagram image has an unsupported format"), { status: 400 });
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of response.body) {
+    size += chunk.length;
+    if (size > MAX_UPLOAD_BYTES) throw Object.assign(new Error("Instagram image exceeds the 8 MB upload limit"), { status: 413 });
+    chunks.push(chunk);
+  }
+  const bytes = Buffer.concat(chunks);
+  if (!bytes.length) throw Object.assign(new Error("Instagram returned an empty image"), { status: 400 });
+  const key = `cars/instagram-${randomUUID()}${extensions[contentType]}`;
+  return objectStorage.upload(key, bytes, contentType);
+}
+
 function send(response, status, value) {
   response.writeHead(status, JSON_HEADERS);
   response.end(JSON.stringify(value));
@@ -454,6 +484,83 @@ export function createInventoryApi(inventory, {
       }
       if (!auth.isAuthenticated(request)) {
         send(response, 401, { error: "Administrator sign-in is required" });
+        return;
+      }
+      if (url.pathname === "/api/instagram/drafts" && request.method === "GET") {
+        send(response, 200, await inventory.listInstagramDrafts());
+        return;
+      }
+      if (url.pathname === "/api/instagram/drafts/import" && request.method === "POST") {
+        const body = await readJson(request);
+        if (!Array.isArray(body.drafts) || body.drafts.length > 100) {
+          send(response, 400, { error: "Provide up to 100 Instagram drafts per import" });
+          return;
+        }
+        const drafts = [];
+        for (const value of body.drafts) {
+          if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((field) => !DRAFT_FIELDS.has(field))) {
+            send(response, 400, { error: "Instagram draft contains unsupported fields" });
+            return;
+          }
+          const mediaId = String(value.mediaId || "").trim();
+          if (!/^[A-Za-z0-9_-]{1,100}$/.test(mediaId) || !Array.isArray(value.imageUrls) || value.imageUrls.length > 10 ||
+              value.imageUrls.some((image) => !validInstagramImageUrl(image)) || typeof value.caption !== "string" || value.caption.length > 20_000) {
+            send(response, 400, { error: "Instagram draft has invalid media, caption, or image data" });
+            return;
+          }
+          drafts.push({ ...value, mediaId, imageUrls: value.imageUrls.slice(0, 10) });
+        }
+        const imported = await inventory.importInstagramDrafts(drafts);
+        send(response, 200, { imported, received: drafts.length });
+        return;
+      }
+      const instagramDraftMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)$/);
+      if (instagramDraftMatch && request.method === "PATCH") {
+        const mediaId = instagramDraftMatch[1];
+        const current = await inventory.getInstagramDraft(mediaId);
+        if (!current || current.reviewStatus !== "pending") { send(response, 404, { error: "Pending Instagram draft not found" }); return; }
+        const body = await readJson(request);
+        const values = body.fields;
+        const allowed = new Set(["year", "make", "model", "trim", "price", "mileage", "body"]);
+        if (!values || typeof values !== "object" || Array.isArray(values) || Object.keys(values).some((field) => !allowed.has(field))) {
+          send(response, 400, { error: "Draft edits contain unsupported fields" });
+          return;
+        }
+        for (const key of ["year", "price", "mileage"]) {
+          if (values[key] === "" || values[key] === null) values[key] = null;
+          else if (values[key] !== undefined && !Number.isFinite(Number(values[key]))) { send(response, 400, { error: `${key} must be a number` }); return; }
+        }
+        const updated = await inventory.updateInstagramDraft(mediaId, { ...current, ...values });
+        send(response, updated ? 200 : 404, updated || { error: "Pending Instagram draft not found" });
+        return;
+      }
+      const instagramReviewMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)\/(approve|reject)$/);
+      if (instagramReviewMatch && request.method === "POST") {
+        const [, mediaId, action] = instagramReviewMatch;
+        const draft = await inventory.getInstagramDraft(mediaId);
+        if (!draft || draft.reviewStatus !== "pending") { send(response, 404, { error: "Pending Instagram draft not found" }); return; }
+        if (action === "reject") {
+          const rejected = await inventory.setInstagramDraftStatus(mediaId, "rejected");
+          send(response, rejected ? 200 : 404, rejected ? { rejected: true } : { error: "Pending Instagram draft not found" });
+          return;
+        }
+        const value = await readJson(request);
+        const car = { ...value.car, id: `instagram-${mediaId.toLowerCase()}`, status: "In Stock", make: String(value.car?.make || "").trim(), model: String(value.car?.model || "").trim(), year: Number(value.car?.year), price: Number(value.car?.price), mileage: Number(value.car?.mileage), description: String(value.car?.description || draft.caption || "").trim() };
+        if (!(car.price > 0)) { send(response, 400, { error: "Set a confirmed asking price before publishing this listing" }); return; }
+        if (!Array.isArray(draft.imageUrls) || !draft.imageUrls.length) { send(response, 400, { error: "This post has no usable image; edit the listing manually before publishing" }); return; }
+        if (await inventory.get(car.id)) { send(response, 409, { error: "This Instagram post already has a vehicle listing" }); return; }
+        const imageUrls = objectStorage?.configured
+          ? await Promise.all(draft.imageUrls.map((image) => importInstagramImage(image, objectStorage)))
+          : draft.imageUrls;
+        car.image = imageUrls[0];
+        car.galleryByCategory = { front: [imageUrls[0]], other: imageUrls.slice(1) };
+        car.gallery = imageUrls;
+        const error = validateCar(car, car.id);
+        if (error) { send(response, 400, { error }); return; }
+        const saved = await inventory.save(car);
+        const published = await inventory.setInstagramDraftStatus(mediaId, "published", car.id);
+        if (!published) { send(response, 409, { error: "The draft was already reviewed; reload the page to see its current status" }); return; }
+        send(response, 201, { car: saved, published: true });
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/auth/change-password") {
