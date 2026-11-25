@@ -1,5 +1,5 @@
-// Paste this file's contents into DevTools Console while signed in to the old live admin.
-// It downloads one private JSON file containing the live inventory and any legacy uploads.
+// Paste this file's contents into DevTools Console while signed in to the live admin.
+// It downloads the inventory and converts every referenced same-site car image to WebP.
 void (async () => {
   const origin = location.origin;
   const response = await fetch("/api/cars", { credentials: "same-origin" });
@@ -12,7 +12,7 @@ void (async () => {
     if (typeof value !== "string") return;
     let url;
     try { url = new URL(value, origin); } catch { return; }
-    if (url.origin === origin && url.pathname.startsWith("/images/cars/uploads/")) paths.add(url.pathname);
+    if (url.origin === origin && /^\/images\/cars\/.+\.(?:jpe?g|png|webp)$/i.test(url.pathname)) paths.add(url.pathname);
   };
   for (const car of cars) {
     collect(car.image);
@@ -32,11 +32,20 @@ void (async () => {
   };
   const media = {};
   for (const path of paths) {
-    const asset = await fetch(path, { credentials: "same-origin" });
-    if (!asset.ok) throw new Error(`Could not export uploaded photo (${asset.status}): ${path}`);
-    const bytes = await asset.arrayBuffer();
-    if (bytes.byteLength > 8 * 1024 * 1024) throw new Error(`Uploaded photo exceeds 8 MB: ${path}`);
-    media[path] = toBase64(bytes);
+    const image = new Image();
+    image.src = path;
+    try { await image.decode(); }
+    catch { throw new Error(`Could not load car photo for export: ${path}`); }
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error(`Could not process car photo: ${path}`);
+    context.drawImage(image, 0, 0);
+    const webp = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.88));
+    if (!webp || webp.type !== "image/webp") throw new Error(`This browser could not convert ${path} to WebP.`);
+    if (webp.size > 8 * 1024 * 1024) throw new Error(`Converted car photo exceeds 8 MB: ${path}`);
+    media[path] = toBase64(await webp.arrayBuffer());
   }
 
   const exportData = { exportedAt: new Date().toISOString(), sourceOrigin: origin, cars, media };
@@ -46,5 +55,5 @@ void (async () => {
   link.download = "inventory.json";
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 60_000);
-  console.info(`Downloaded inventory.json with ${cars.length} cars and ${paths.size} photos. Keep it private.`);
+  console.info(`Downloaded inventory.json with ${cars.length} cars and ${paths.size} WebP photos. Keep it private.`);
 })();

@@ -26,8 +26,3 @@ export function writeStore(state) {
     return false;
   }
 }
-
-export function resetDemoStore() {
-  localStorage.removeItem(KEY);
-  return initialState();
-}

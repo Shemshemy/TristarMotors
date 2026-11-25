@@ -39,10 +39,6 @@ export class RateLimiter {
     }
   }
 
-  reset() {
-    this.clients.clear();
-  }
-
   close() {
     clearInterval(this.cleanupTimer);
     this.clients.clear();

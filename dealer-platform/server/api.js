@@ -119,6 +119,30 @@ function validateCar(value, id) {
       }
     }
   }
+  if (process.env.NODE_ENV === "production") {
+    const publicBase = process.env.S3_PUBLIC_BASE_URL;
+    let allowedPrefix = "";
+    try {
+      const base = new URL(publicBase);
+      allowedPrefix = `${base.origin}${base.pathname.replace(/\/+$/, "")}/`;
+    } catch {}
+    const imageUrls = [
+      car.image,
+      ...(car.gallery || []),
+      ...(car.frames || []),
+      car.frameBase,
+      ...Object.values(car.galleryByCategory || {}).flat(),
+    ].filter((url) => url !== undefined && url !== null && url !== "");
+    if (!allowedPrefix || typeof car.image !== "string" || !car.image || imageUrls.some((value) => {
+      if (typeof value !== "string" || value.length > 2048) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol !== "https:" || !url.href.startsWith(allowedPrefix);
+      } catch { return true; }
+    })) {
+      return "Vehicle photos must use public HTTPS URLs from the Cloudflare image domain";
+    }
+  }
   return null;
 }
 
@@ -456,6 +480,10 @@ export function createInventoryApi(inventory, {
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/reset") {
+        if (process.env.NODE_ENV === "production") {
+          send(response, 404, { error: "Endpoint not found" });
+          return;
+        }
         await inventory.reset();
         send(response, 200, await inventory.list());
         return;

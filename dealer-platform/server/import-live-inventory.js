@@ -9,12 +9,12 @@ if (!password) throw new Error("Set TRISTAR_TARGET_ADMIN_PASSWORD in dealer-plat
 const exportPath = join(exportDirectory, "inventory.json");
 const exportData = JSON.parse(await readFile(exportPath, "utf8"));
 if (!Array.isArray(exportData.cars)) throw new Error("The migration export does not contain an inventory list.");
-const legacyUploads = new Set();
+const sourceImages = new Set();
 const collect = (value) => {
   if (typeof value !== "string") return;
   let parsed;
   try { parsed = new URL(value, exportData.sourceOrigin); } catch { return; }
-  if (parsed.origin === exportData.sourceOrigin && parsed.pathname.startsWith("/images/cars/uploads/")) legacyUploads.add(parsed.pathname);
+  if (parsed.origin === exportData.sourceOrigin && parsed.pathname.startsWith("/images/cars/")) sourceImages.add(parsed.pathname);
 };
 for (const car of exportData.cars) {
   collect(car.image);
@@ -22,12 +22,12 @@ for (const car of exportData.cars) {
   for (const url of car.frames || []) collect(url);
   for (const urls of Object.values(car.galleryByCategory || {})) for (const url of urls || []) collect(url);
 }
-for (const path of legacyUploads) {
+for (const path of sourceImages) {
   const name = basename(decodeURIComponent(path));
   try {
     if (typeof exportData.media?.[path] !== "string") await readFile(join(exportDirectory, "media", name));
   }
-  catch { throw new Error(`The export is missing uploaded photo ${name}. Re-export before deploying if possible.`); }
+  catch { throw new Error(`The export is missing photo ${name}. Re-export with server/export-live-inventory-browser.js before importing.`); }
 }
 
 const login = await fetch(new URL("/api/auth/login", targetUrl), {
@@ -61,22 +61,29 @@ const request = async (path, options) => {
   return response;
 };
 const categoryFor = (name) => {
-  const category = name.toLowerCase().match(/^(front|side|rear|interior|other)(?:-|\.)/i)?.[1]?.toLowerCase();
-  return category || "other";
+  const lower = name.toLowerCase();
+  if (/(^|[-_ ])(front|headon)([-_. ]|$)/.test(lower)) return "front";
+  if (/(^|[-_ ])side([-_. ]|$)/.test(lower)) return "side";
+  if (/(^|[-_ ])rear([-_. ]|$)/.test(lower)) return "rear";
+  if (/(^|[-_ ])(interior|cockpit)([-_. ]|$)/.test(lower)) return "interior";
+  return "other";
 };
 let requestCount = 0;
 const uploadUrl = async (value) => {
   if (typeof value !== "string") return value;
   let parsed;
   try { parsed = new URL(value, exportData.sourceOrigin); } catch { return value; }
-  if (parsed.origin !== exportData.sourceOrigin || !parsed.pathname.startsWith("/images/cars/uploads/")) return value;
+  if (parsed.origin !== exportData.sourceOrigin || !parsed.pathname.startsWith("/images/cars/")) return value;
   const path = parsed.pathname;
   if (uploadedUrls[path]) return uploadedUrls[path];
   const name = basename(decodeURIComponent(path));
   const embedded = exportData.media?.[path];
   const bytes = typeof embedded === "string"
     ? Buffer.from(embedded, "base64")
-    : await readFile(join(exportDirectory, "media", name));
+    : parsed.pathname.startsWith("/images/cars/uploads/")
+      ? await readFile(join(exportDirectory, "media", name))
+      : null;
+  if (!bytes) throw new Error(`The export is missing photo data for ${name}. Re-export with server/export-live-inventory-browser.js.`);
   const response = await request("/api/uploads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -115,5 +122,5 @@ for (const original of exportData.cars) {
   requestCount += 1;
   await delay(1050);
 }
-console.log(`Imported ${imported} inventory records. Reuploaded ${Object.keys(uploadedUrls).length} photos to R2.`);
+console.log(`Imported ${imported} inventory records. Uploaded ${Object.keys(uploadedUrls).length} photos to R2.`);
 console.log(`Sent ${requestCount} authenticated changes to ${targetUrl.origin}.`);
