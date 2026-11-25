@@ -13,6 +13,12 @@ let database;
 let server;
 let baseUrl;
 let adminCookie;
+const uploadedObjects = new Map();
+const objectStorage = {
+  configured: true,
+  async upload(key, body) { uploadedObjects.set(key, Buffer.from(body)); return `https://images.example.test/${key}`; },
+  async deleteUrl(url) { if (typeof url === "string" && url.startsWith("https://images.example.test/")) uploadedObjects.delete(new URL(url).pathname.slice(1)); },
+};
 
 async function login(username = "Allan", password = "local-test-password-strong-enough") {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
@@ -36,7 +42,7 @@ before(async () => {
   database = new InventoryDatabase(join(directory, "inventory.sqlite"));
   server = createInventoryApi(database, {
     adminPassword: "local-test-password-strong-enough",
-    uploadDirectory: join(directory, "uploads"),
+    objectStorage,
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -212,7 +218,7 @@ test("uses the forwarded client IP for independent administrator login lockouts"
   assert.equal((await requestLogin("198.51.100.11", "local-test-password-strong-enough")).status, 200);
 });
 
-test("converts uploads to safe categorized WebP paths and rejects untrusted input", async () => {
+test("uploads WebP bytes to object storage and rejects untrusted input", async () => {
   const candidatePaths = [
     new URL("../public/images/brand/avatar.webp", import.meta.url),
     new URL("../public/images/body-types/sedan.webp", import.meta.url),
@@ -229,10 +235,8 @@ test("converts uploads to safe categorized WebP paths and rejects untrusted inpu
   });
   assert.equal(upload.status, 201);
   const result = await upload.json();
-  assert.match(result.url, /^\/images\/cars\/uploads\/front-[a-f0-9-]+\.webp$/);
-  const uploadedFile = join(directory, "uploads", result.url.split("/").at(-1));
-  assert.deepEqual(readFileSync(uploadedFile), fixture);
-  assert.equal(readdirSync(join(directory, "uploads")).length, 1);
+  assert.match(result.url, /^https:\/\/images\.example\.test\/cars\/front-[a-f0-9-]+\.webp$/);
+  assert.deepEqual(uploadedObjects.get(new URL(result.url).pathname.slice(1)), fixture);
   const savedCar = await adminFetch("/api/cars", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -314,18 +318,13 @@ test("normalizes legacy inventory fields without changing vehicle details", () =
 
 test("serves the production storefront and persistent uploads without swallowing API 404s", async () => {
   const staticDirectory = join(directory, "production-site");
-  const uploadDirectory = join(directory, "production-uploads");
   mkdirSync(join(staticDirectory, "assets"), { recursive: true });
-  mkdirSync(uploadDirectory, { recursive: true });
   writeFileSync(join(staticDirectory, "index.html"), "<main>Tristar storefront</main>");
   writeFileSync(join(staticDirectory, "vehicle.html"), "<!doctype html><html><head><title>Vehicle Details</title><meta name=\"description\" content=\"Vehicle details\"></head><body><main>Vehicle Details</main><footer class=\"footer-brand\">Tristar Motors</footer></body></html>");
   writeFileSync(join(staticDirectory, "assets", "app.js"), "console.log('storefront')");
-  const uploadedImage = Buffer.from("RIFF-test-WEBP");
-  writeFileSync(join(uploadDirectory, "front-example.webp"), uploadedImage);
 
   const productionServer = createInventoryApi(database, {
     adminPassword: "production-test-password-long-enough",
-    uploadDirectory,
     staticDirectory,
     allowRemote: true,
   });
@@ -352,8 +351,7 @@ test("serves the production storefront and persistent uploads without swallowing
     assert.match(await asset.text(), /storefront/);
 
     const image = await fetch(`${url}/images/cars/uploads/front-example.webp`);
-    assert.equal(image.headers.get("content-type"), "image/webp");
-    assert.deepEqual(Buffer.from(await image.arrayBuffer()), uploadedImage);
+    assert.equal(image.status, 404);
 
     const traversal = await fetch(`${url}/images/cars/uploads/%2e%2e%2finventory.sqlite`);
     assert.equal(traversal.status, 404);

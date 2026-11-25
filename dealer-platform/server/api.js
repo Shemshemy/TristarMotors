@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, extname, join, resolve, sep } from "node:path";
+import { readFile, stat } from "node:fs/promises";
+import { extname, join, resolve, sep } from "node:path";
 import { AdminAuth } from "./auth.js";
 import { INVENTORY_STATUSES } from "./inventory.js";
 import { RateLimiter, getClientIp } from "./limiter.js";
@@ -187,9 +187,8 @@ function staticFilePath(root, pathname) {
 export function createInventoryApi(inventory, {
   adminPassword = process.env.TRISTAR_ADMIN_PASSWORD,
   passwordFilePath,
-  uploadDirectory,
+  objectStorage,
   staticDirectory,
-  createBackup,
   allowRemote = false,
   rateLimiter = new RateLimiter(),
 } = {}) {
@@ -214,7 +213,7 @@ export function createInventoryApi(inventory, {
       "@context": "https://schema.org", "@type": "Vehicle", name: `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`,
       brand: { "@type": "Brand", name: car.make }, model: car.model, vehicleModelDate: String(car.year), bodyType: car.body || car.type,
       mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" }, image: [car.image, ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
-      description: car.description || description, offers: { "@type": "Offer", url: canonical, price: Number(car.price), priceCurrency: "KES", availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: "La Colline Garden, Masaba Road, Upper Hill, Nairobi, Kenya" } },
+      description: car.description || description, offers: { "@type": "Offer", url: canonical, price: Number(car.price), priceCurrency: "KES", availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: { "@type": "PostalAddress", addressLocality: "Nairobi", addressCountry: "KE" }, hasMap: "https://maps.app.goo.gl/BL8tkatuVavFeiKg6" } },
     };
     const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
     const template = await readFile(htmlPath, "utf8");
@@ -257,7 +256,7 @@ export function createInventoryApi(inventory, {
     let html = await readFile(filePath, "utf8");
     const origin = siteOrigin(request);
     const canonical = `${origin}/`;
-    const description = "Explore pre-owned Mercedes-Benz cars at Tristar Motors in Upper Hill, Nairobi. View available cars, prices and mileage, then contact us to arrange a visit.";
+    const description = "Explore pre-owned Mercedes-Benz cars at Tristar Motors in Nairobi. View available cars, prices and mileage, then contact us to arrange a visit.";
     const dealership = {
       "@context": "https://schema.org",
       "@type": "AutoDealer",
@@ -268,17 +267,17 @@ export function createInventoryApi(inventory, {
       telephone: "+254734490475",
       address: {
         "@type": "PostalAddress",
-        streetAddress: "La Colline Garden, Masaba Road, Upper Hill",
         addressLocality: "Nairobi",
         addressCountry: "KE",
       },
+      hasMap: "https://maps.app.goo.gl/BL8tkatuVavFeiKg6",
       areaServed: { "@type": "City", name: "Nairobi" },
     };
     const homepageSeo = `<meta property="og:url" content="${esc(canonical)}"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(dealership)}</script>`;
     html = html.replace(/<link rel="canonical" href="[^"]*">/i, `<link rel="canonical" href="${esc(canonical)}">`)
       .replace(/<meta name="description" content="[^"]*">/i, `<meta name="description" content="${esc(description)}">`)
       .replace("</head>", `${homepageSeo}</head>`);
-    const cars = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
+    const cars = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
       const href = `/cars/${encodeURIComponent(car.id)}`;
@@ -370,7 +369,7 @@ export function createInventoryApi(inventory, {
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/cars") {
-        const cars = inventory.list();
+        const cars = await inventory.list();
         send(response, 200, auth.isAuthenticated(request)
           ? cars
           : cars.map(publicCar));
@@ -383,7 +382,7 @@ export function createInventoryApi(inventory, {
       }
       if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && url.pathname === "/sitemap.xml") {
         const origin = siteOrigin(request);
-        const urls = inventory.list().filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0).map((car) => `<url><loc>${esc(origin)}/cars/${encodeURIComponent(car.id)}</loc></url>`).join("");
+        const urls = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0).map((car) => `<url><loc>${esc(origin)}/cars/${encodeURIComponent(car.id)}</loc></url>`).join("");
         const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${esc(origin)}/</loc></url>${urls}</urlset>`;
         response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" });
         response.end(request.method === "HEAD" ? undefined : xml);
@@ -402,7 +401,7 @@ export function createInventoryApi(inventory, {
       if (staticDirectory && vehicleRoute && (request.method === "GET" || request.method === "HEAD")) {
         let id = "";
         try { id = decodeURIComponent(vehicleRoute[1]); } catch {}
-        const car = inventory.get(id);
+        const car = await inventory.get(id);
         if (!car || car.make !== "Mercedes-Benz" || !(Number(car.price) > 0)) {
           response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" });
           response.end("Vehicle not found");
@@ -413,19 +412,7 @@ export function createInventoryApi(inventory, {
       }
       if (staticDirectory && !url.pathname.startsWith("/api") &&
           (request.method === "GET" || request.method === "HEAD")) {
-        if (url.pathname.startsWith("/images/cars/uploads/") && uploadDirectory) {
-          let filename;
-          try {
-            filename = decodeURIComponent(url.pathname.slice("/images/cars/uploads/".length));
-          } catch {
-            filename = "";
-          }
-          if (filename && filename === filename.split(/[\\/]/).at(-1)) {
-            const uploadPath = resolve(uploadDirectory, filename);
-            if (uploadPath.startsWith(`${resolve(uploadDirectory)}${sep}`) &&
-                await serveStaticFile(request, response, uploadPath, url.pathname)) return;
-          }
-        } else {
+        {
           const filePath = staticFilePath(staticDirectory, url.pathname);
           if (filePath && await serveStaticFile(request, response, filePath, url.pathname)) return;
           if (!extname(url.pathname)) {
@@ -445,16 +432,11 @@ export function createInventoryApi(inventory, {
         send(response, 401, { error: "Administrator sign-in is required" });
         return;
       }
-      if (request.method === "POST" && url.pathname === "/api/admin/backups") {
-        if (!createBackup) {
-          send(response, 503, { error: "Backups are not configured on this server" });
+      if (request.method === "POST" && url.pathname === "/api/auth/change-password") {
+        if (process.env.NODE_ENV === "production") {
+          send(response, 409, { error: "The production password is managed by the TRISTAR_ADMIN_PASSWORD environment variable." });
           return;
         }
-        const snapshotPath = await createBackup();
-        send(response, 201, { snapshot: basename(snapshotPath), createdAt: new Date().toISOString() });
-        return;
-      }
-      if (request.method === "POST" && url.pathname === "/api/auth/change-password") {
         const body = await readJson(request);
         if (!auth.checkPassword(body.currentPassword)) {
           send(response, 401, { error: "Current password is incorrect" });
@@ -474,13 +456,13 @@ export function createInventoryApi(inventory, {
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/reset") {
-        inventory.reset();
-        send(response, 200, inventory.list());
+        await inventory.reset();
+        send(response, 200, await inventory.list());
         return;
       }
       if (request.method === "POST" && url.pathname === "/api/uploads") {
-        if (!uploadDirectory) {
-          send(response, 503, { error: "The image upload directory is not configured" });
+        if (!objectStorage?.configured) {
+          send(response, 503, { error: "S3-compatible image storage is not configured" });
           return;
         }
         const body = await readJson(request, Math.ceil(MAX_UPLOAD_BYTES * 4 / 3) + 32 * 1024);
@@ -502,9 +484,8 @@ export function createInventoryApi(inventory, {
           return;
         }
         const filename = `${body.category}-${randomUUID()}.webp`;
-        await mkdir(uploadDirectory, { recursive: true });
-        await writeFile(join(uploadDirectory, filename), image, { flag: "wx" });
-        send(response, 201, { url: `/images/cars/uploads/${filename}`, category: body.category });
+        const imageUrl = await objectStorage.upload(`cars/${filename}`, image);
+        send(response, 201, { url: imageUrl, category: body.category });
         return;
       }
 
@@ -516,7 +497,7 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error: "Status must be In Stock, Pending, or Sold" });
           return;
         }
-        const car = inventory.setStatus(id, body.status);
+        const car = await inventory.setStatus(id, body.status);
         send(response, car ? 200 : 404, car || { error: "Vehicle not found" });
         return;
       }
@@ -530,7 +511,7 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error });
           return;
         }
-        const car = inventory.save(body.id === id ? body : { ...body, id });
+        const car = await inventory.save(body.id === id ? body : { ...body, id });
         send(response, 200, car);
         return;
       }
@@ -541,7 +522,7 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error: "Vehicle id must use lowercase letters, numbers, and hyphens" });
           return;
         }
-        if (inventory.get(id)) {
+        if (await inventory.get(id)) {
           send(response, 409, { error: "A vehicle with that id already exists" });
           return;
         }
@@ -550,11 +531,15 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error });
           return;
         }
-        send(response, 201, inventory.save({ ...body, id }));
+        send(response, 201, await inventory.save({ ...body, id }));
         return;
       }
       if (itemMatch && request.method === "DELETE") {
-        const removed = inventory.remove(decodeURIComponent(itemMatch[1]));
+        const id = decodeURIComponent(itemMatch[1]);
+        const car = await inventory.get(id);
+        if (!car) { send(response, 404, { error: "Vehicle not found" }); return; }
+        await Promise.all([...new Set([car.image, ...(car.gallery || []), ...(car.frames || []), ...Object.values(car.galleryByCategory || {}).flat()])].map((url) => objectStorage?.deleteUrl(url)));
+        const removed = await inventory.remove(id);
         send(response, removed ? 200 : 404, removed ? { ok: true } : { error: "Vehicle not found" });
         return;
       }

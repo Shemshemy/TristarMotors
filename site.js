@@ -1,6 +1,6 @@
 /**
  * Tristar Motors — Pre-Owned Mercedes-Benz Dealership
- * Upper Hill, Nairobi, Kenya
+ * Nairobi, Kenya
  */
 
 const DEALER = {
@@ -8,7 +8,7 @@ const DEALER = {
   phone: "+254 734 490 475",
   whatsapp: "254734490475",
   email: "sales@tristarmotors.co.ke",
-  address: "La Colline Garden, Masaba Road, Upper Hill, Nairobi, Kenya",
+  address: "Tristar Motors, Nairobi, Kenya",
   paymentNotice: "Contact us to discuss payment options"
 };
 
@@ -252,7 +252,7 @@ function renderVehicles() {
   // Render Product Cards
   grid.innerHTML = pageResults.map((car) => {
     const isSaved = savedVehicles.has(car.id);
-    const waText = `Hello Tristar Motors, I am interested in purchasing the ${car.year} Mercedes-Benz ${car.model} (Cash Price: ${money(car.price)}). Is it available to view at your La Colline Garden showroom on Masaba Road?`;
+    const waText = `Hello Tristar Motors, I am interested in purchasing the ${car.year} Mercedes-Benz ${car.model} (Cash Price: ${money(car.price)}). Is it available to view at your Nairobi showroom?`;
     const waUrl = getWhatsAppUrl(waText);
 
     return `
@@ -666,7 +666,7 @@ function setupVehiclePage() {
   setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
   setText("detail-condition", car.condition || "Pre-owned");
   setText("detail-price", money(car.price));
-  setText("detail-description", car.description || "Pre-owned Mercedes-Benz available to view at our Upper Hill showroom. Get in touch to ask about this vehicle and the documents available.");
+  setText("detail-description", car.description || "Pre-owned Mercedes-Benz available to view at our Nairobi showroom. Get in touch to ask about this vehicle and the documents available.");
 
   // Technical Specs
   setText("detail-chassis", car.chassis || "Mercedes-Benz");
