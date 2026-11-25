@@ -467,6 +467,20 @@ test("stores Instagram imports as private drafts and keeps reviewer edits across
   });
   assert.equal(rejected.status, 200);
   assert.deepEqual(await (await adminFetch("/api/instagram/drafts")).json(), []);
+
+  const deleteDraft = { ...draft, mediaId: "draft_to_delete_01", shortcode: "draft_to_delete_01" };
+  const addedForDelete = await adminFetch("/api/instagram/drafts/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drafts: [deleteDraft] }),
+  });
+  assert.equal(addedForDelete.status, 200);
+  const deleted = await adminFetch(`/api/instagram/drafts/${deleteDraft.mediaId}`, { method: "DELETE" });
+  assert.equal(deleted.status, 200);
+  assert.deepEqual(await deleted.json(), { deleted: true });
+  const missing = await adminFetch(`/api/instagram/drafts/${deleteDraft.mediaId}`, { method: "DELETE" });
+  assert.equal(missing.status, 404);
+  assert.deepEqual(await (await adminFetch("/api/instagram/drafts")).json(), []);
 });
 
 test("publishes a reviewed Instagram draft only after approval and copies its images to storage", async () => {

@@ -1254,6 +1254,7 @@ body.modal-open{overflow:hidden}
 }
 .instagram-draft-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .instagram-draft-actions .btn,.instagram-draft-actions .table-action { min-height: 34px; font-size: 11px; }
+.instagram-draft-edit-actions { display: flex; gap: 8px; margin-top: 18px; }
 .instagram-draft-error { min-height: 0; margin: 7px 0 0; color: #b42318; font-size: 11px; }
 @media (max-width: 760px) {
   .instagram-drafts-panel { padding: 15px; }
@@ -6488,6 +6489,7 @@ body,.app-home {
   background: #101611a8;
   backdrop-filter: blur(4px);
 }
+.instagram-draft-modal { width: min(760px, calc(100vw - 32px)); }
 
 html:has(dialog[open]) {
   overflow:hidden;

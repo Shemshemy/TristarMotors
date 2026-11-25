@@ -613,7 +613,37 @@ function renderInstagramDraftQueue() {
     const image = images[0];
     const date = draft.date ? new Date(draft.date).toLocaleDateString() : "Date unavailable";
     const parsedPrice = draft.price ?? "";
-    return `<article class="instagram-draft-card"><div class="instagram-draft-image">${image ? `<img src="${escapeHTML(image)}" alt="Instagram post photo 1 of ${images.length}" loading="lazy">` : `<span>No preview image</span>`}<span class="instagram-photo-count">${images.length} ${images.length === 1 ? "photo" : "photos"}</span></div><div class="instagram-draft-content"><div class="instagram-draft-meta"><strong>${escapeHTML(date)}</strong><a href="${escapeHTML(draft.permalink || "#")}" target="_blank" rel="noopener noreferrer">Open Instagram post ↗</a></div><div class="instagram-draft-gallery">${images.map((url,index)=>`<img src="${escapeHTML(url)}" alt="Instagram photo ${index+1} of ${images.length}" loading="lazy">`).join("")}</div><p class="instagram-draft-caption">${escapeHTML(draft.caption || "No caption")}</p><form class="instagram-draft-form" data-media-id="${escapeHTML(draft.mediaId)}"><div class="instagram-draft-fields"><label>Year<input name="year" inputmode="numeric" value="${escapeHTML(draft.year ?? "")}" placeholder="Year"></label><label>Make<input name="make" value="${escapeHTML(draft.make || "")}" placeholder="Make" required></label><label>Model<input name="model" value="${escapeHTML(draft.model || "")}" placeholder="Model" required></label><label>Price (KES)<input name="price" type="number" min="1" step="1" value="${escapeHTML(parsedPrice)}" placeholder="Confirm price"></label><label>Mileage (km)<input name="mileage" type="number" min="0" step="1" value="${escapeHTML(draft.mileage ?? "")}" placeholder="Mileage"></label><label>Body style<select name="body"><option value="Sedan" ${draft.body === "Sedan" ? "selected" : ""}>Sedan</option><option value="SUV" ${draft.body === "SUV" ? "selected" : ""}>SUV</option><option value="Coupe" ${draft.body === "Coupe" ? "selected" : ""}>Coupe</option><option value="Wagon" ${draft.body === "Wagon" ? "selected" : ""}>Wagon</option><option value="Roadster" ${draft.body === "Roadster" ? "selected" : ""}>Roadster</option></select></label></div><div class="instagram-draft-actions"><button class="btn btn-light" type="submit" data-review-action="save">Save draft edits</button><button class="btn btn-primary" type="submit" data-review-action="publish">Approve and add to site</button><button class="table-action delete" type="button" data-action="reject-instagram-draft" data-id="${escapeHTML(draft.mediaId)}">Reject</button></div><p class="instagram-draft-error" role="alert"></p></form></div></article>`;
+    return `<article class="instagram-draft-card" data-media-id="${escapeHTML(draft.mediaId)}">
+      <div class="instagram-draft-image">${image ? `<img src="${escapeHTML(image)}" alt="Instagram post photo 1 of ${images.length}" loading="lazy">` : `<span>No preview image</span>`}<span class="instagram-photo-count">${images.length} ${images.length === 1 ? "photo" : "photos"}</span></div>
+      <div class="instagram-draft-content">
+        <div class="instagram-draft-meta"><strong>${escapeHTML(date)}</strong><a href="${escapeHTML(draft.permalink || "#")}" target="_blank" rel="noopener noreferrer">Open Instagram post ↗</a></div>
+        <div class="instagram-draft-gallery">${images.map((url,index)=>`<img src="${escapeHTML(url)}" alt="Instagram photo ${index+1} of ${images.length}" loading="lazy">`).join("")}</div>
+        <p class="instagram-draft-caption">${escapeHTML(draft.caption || "No caption")}</p>
+        <dialog class="vehicle-modal instagram-draft-modal" id="instagram-draft-editor-${escapeHTML(draft.mediaId)}" aria-labelledby="instagram-draft-title-${escapeHTML(draft.mediaId)}">
+        <section class="admin-form-card">
+        <div class="vehicle-modal-heading"><div><p class="eyebrow">EDIT DRAFT</p><h2 id="instagram-draft-title-${escapeHTML(draft.mediaId)}">Edit vehicle details</h2></div><button class="vehicle-modal-close" type="button" data-action="cancel-instagram-draft-edit" data-id="${escapeHTML(draft.mediaId)}" aria-label="Close editor">×</button></div>
+        <p class="text-muted">These fields are prefilled from the Instagram caption. Review and save changes before approving.</p>
+        <form class="instagram-draft-form" data-media-id="${escapeHTML(draft.mediaId)}">
+          <div class="instagram-draft-fields">
+            <label>Year<input name="year" inputmode="numeric" value="${escapeHTML(draft.year ?? "")}" placeholder="Year"></label>
+            <label>Make<input name="make" value="${escapeHTML(draft.make || "")}" placeholder="Make" required></label>
+            <label>Model<input name="model" value="${escapeHTML(draft.model || "")}" placeholder="Model" required></label>
+            <label>Price (KES)<input name="price" type="number" min="1" step="1" value="${escapeHTML(parsedPrice)}" placeholder="Confirm price"></label>
+            <label>Mileage (km)<input name="mileage" type="number" min="0" step="1" value="${escapeHTML(draft.mileage ?? "")}" placeholder="Mileage"></label>
+            <label>Body style<select name="body"><option value="Sedan" ${draft.body === "Sedan" ? "selected" : ""}>Sedan</option><option value="SUV" ${draft.body === "SUV" ? "selected" : ""}>SUV</option><option value="Coupe" ${draft.body === "Coupe" ? "selected" : ""}>Coupe</option><option value="Wagon" ${draft.body === "Wagon" ? "selected" : ""}>Wagon</option><option value="Roadster" ${draft.body === "Roadster" ? "selected" : ""}>Roadster</option></select></label>
+          </div>
+          <div class="instagram-draft-edit-actions"><button class="btn btn-primary" type="submit" data-review-action="save">Save changes</button><button class="btn btn-light" type="button" data-action="cancel-instagram-draft-edit" data-id="${escapeHTML(draft.mediaId)}">Cancel</button></div>
+          <p class="instagram-draft-error" role="alert"></p>
+        </form>
+        </section>
+        </dialog>
+        <div class="instagram-draft-actions">
+          <button class="btn btn-light" type="button" data-action="edit-instagram-draft" data-id="${escapeHTML(draft.mediaId)}">Edit</button>
+          <button class="table-action delete" type="button" data-action="delete-instagram-draft" data-id="${escapeHTML(draft.mediaId)}">Delete</button>
+          <button class="btn btn-primary" type="button" data-action="approve-instagram-draft" data-id="${escapeHTML(draft.mediaId)}">Approve</button>
+        </div>
+      </div>
+    </article>`;
   }).join("");
   const status = instagramDraftsError ? `<p class="instagram-drafts-error">Could not load drafts: ${escapeHTML(instagramDraftsError)}</p>` : instagramDraftsLoading ? `<p>Loading Instagram drafts…</p>` : "";
   return `<section class="instagram-drafts-panel"><div class="instagram-drafts-heading"><div><p class="eyebrow">CONTENT REVIEW</p><h2>Instagram drafts <span>${instagramDrafts.length}</span></h2><p>Scraped posts stay here until you approve them. Confirm the vehicle details and price before publishing.</p></div><button class="btn btn-light" type="button" data-action="refresh-instagram-drafts">Refresh drafts</button></div><div class="instagram-scraper-help"><strong>Collect the last six months:</strong> start the local site, then run <code>python3 script/main.py --admin-import</code>. The scraper sends posts into this queue; reruns skip existing drafts by Instagram post ID.</div>${status}${cards || (instagramDraftsLoaded && !instagramDraftsError ? `<p class="instagram-drafts-empty">No Instagram drafts are waiting for review.</p>` : "")}</section>`;
@@ -637,9 +667,9 @@ async function refreshInstagramDrafts() {
 
 async function handleInstagramDraftSubmit(event) {
   event.preventDefault();
-  const form = event.currentTarget;
+  const form = event.target.closest(".instagram-draft-form");
+  if (!form) return;
   const mediaId = form.dataset.mediaId;
-  const action = event.submitter?.dataset.reviewAction || "save";
   const data = new FormData(form);
   const fields = {
     year: data.get("year") ? Number(data.get("year")) : null,
@@ -654,22 +684,38 @@ async function handleInstagramDraftSubmit(event) {
   errorNode.textContent = "";
   buttons.forEach((button) => { button.disabled = true; });
   try {
-    if (action === "publish") {
-      const draft = instagramDrafts.find((item) => item.mediaId === mediaId);
-      const result = await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}/approve`, {
-        method: "POST",
-        body: JSON.stringify({ car: { ...fields, trim: draft?.parsed?.trim || "", transmission: "Automatic", engine: "", fuel: "Petrol", class: "Mercedes-Benz", description: draft?.caption || "" } }),
-      });
-      store.cars = [result.car, ...store.cars.filter((car) => car.id !== result.car.id)];
-      toast("Approved and added to the site");
-    } else {
-      await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}`, { method: "PATCH", body: JSON.stringify({ fields }) });
-      toast("Draft edits saved");
-    }
+    await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}`, { method: "PATCH", body: JSON.stringify({ fields }) });
+    toast("Draft edits saved");
     await refreshInstagramDrafts();
   } catch (error) {
     errorNode.textContent = error.message;
     buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+async function approveInstagramDraft(mediaId, button) {
+  const draft = instagramDrafts.find((item) => item.mediaId === mediaId);
+  if (!draft) return;
+  button.disabled = true;
+  const fields = {
+    year: draft.year ?? draft.parsed?.year ?? null,
+    make: String(draft.make || draft.parsed?.make || "").trim(),
+    model: String(draft.model || draft.parsed?.model || "").trim(),
+    price: draft.price ?? draft.parsed?.price_kes ?? null,
+    mileage: draft.mileage ?? null,
+    body: draft.body || "Sedan",
+  };
+  try {
+    const result = await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ car: { ...fields, trim: draft.parsed?.trim || "", transmission: "Automatic", engine: "", fuel: "Petrol", class: "Mercedes-Benz", description: draft.caption || "" } }),
+    });
+    store.cars = [result.car, ...store.cars.filter((car) => car.id !== result.car.id)];
+    toast("Approved and added to the site");
+    await refreshInstagramDrafts();
+  } catch (error) {
+    button.disabled = false;
+    toast(`Could not approve draft: ${error.message}`);
   }
 }
 
@@ -1063,11 +1109,23 @@ function handleClick(event){
   const button=event.target.closest("[data-action]");if(!button)return;
   const action=button.dataset.action,id=button.dataset.id||button.dataset.car;
   if(action==="refresh-instagram-drafts"){refreshInstagramDrafts();return;}
-  if(action==="reject-instagram-draft"){
+  if(action==="edit-instagram-draft"){
+    document.querySelector(`#instagram-draft-editor-${CSS.escape(id)}`)?.showModal();
+    return;
+  }
+  if(action==="cancel-instagram-draft-edit"){
+    button.closest("dialog")?.close();
+    return;
+  }
+  if(action==="approve-instagram-draft"){void approveInstagramDraft(id,button);return;}
+  if(action==="delete-instagram-draft"){
+    const draft=instagramDrafts.find(item=>item.mediaId===id);
+    const label=draft?.model||draft?.caption||id;
+    if(!window.confirm(`Delete this Instagram draft?\n\n${label}`))return;
     button.disabled=true;
-    apiRequest(`/api/instagram/drafts/${encodeURIComponent(id)}/reject`,{method:"POST",body:JSON.stringify({})})
-      .then(()=>{instagramDrafts=instagramDrafts.filter(draft=>draft.mediaId!==id);renderAdmin();toast("Instagram draft rejected");})
-      .catch(error=>{button.disabled=false;toast(`Could not reject draft: ${error.message}`);});
+    apiRequest(`/api/instagram/drafts/${encodeURIComponent(id)}`,{method:"DELETE"})
+      .then(()=>{instagramDrafts=instagramDrafts.filter(draft=>draft.mediaId!==id);renderAdmin();toast("Instagram draft deleted");})
+      .catch(error=>{button.disabled=false;toast(`Could not delete draft: ${error.message}`);});
     return;
   }
   if(action==="open-password-dialog"){document.querySelector("#password-change-dialog")?.showModal();lockPageScroll();return;}

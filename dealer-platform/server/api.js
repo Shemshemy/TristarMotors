@@ -514,6 +514,12 @@ export function createInventoryApi(inventory, {
         send(response, 200, { imported, received: drafts.length });
         return;
       }
+      const instagramDraftDeleteMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)$/);
+      if (instagramDraftDeleteMatch && request.method === "DELETE") {
+        const deleted = await inventory.deleteInstagramDraft(instagramDraftDeleteMatch[1]);
+        send(response, deleted ? 200 : 404, deleted ? { deleted: true } : { error: "Pending Instagram draft not found" });
+        return;
+      }
       const instagramDraftMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)$/);
       if (instagramDraftMatch && request.method === "PATCH") {
         const mediaId = instagramDraftMatch[1];

@@ -161,6 +161,14 @@ export class InventoryDatabase {
     return result.changes ? this.getInstagramDraft(mediaId) : null;
   }
 
+  async deleteInstagramDraft(mediaId) {
+    if (this.pool) {
+      const { rowCount } = await this.pool.query("DELETE FROM instagram_drafts WHERE media_id=$1 AND status='pending'", [mediaId]);
+      return rowCount > 0;
+    }
+    return this.db.prepare("DELETE FROM instagram_drafts WHERE media_id=? AND status='pending'").run(mediaId).changes > 0;
+  }
+
   async setInstagramDraftStatus(mediaId, status, carId = null) {
     const draft = await this.getInstagramDraft(mediaId);
     if (!draft || draft.reviewStatus !== "pending") return false;
