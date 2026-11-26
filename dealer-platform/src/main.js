@@ -199,7 +199,7 @@ const escapeHTML = (value="") => String(value).replace(/[&<>"']/g, ch => ({"&":"
 const route = () => location.hash || "#/";
 const carById = (id) => store.cars.find((car) => car.id === id);
 const listedCars = () => store.cars.filter((car) =>
-  car.make === "Mercedes-Benz" && car.price != null && Number.isFinite(Number(car.price)) && Number(car.price) >= 0
+  car.make === "Mercedes-Benz" && (car.price == null || (Number.isFinite(Number(car.price)) && Number(car.price) >= 0))
 );
 const priceLabel = (price) => price == null || Number(price) === 0 ? "Ask for price" : money(price);
 const mileageLabel = (mileage) => Number(mileage) === 0 ? "Inquire about mileage" : `${number(mileage)} km`;
@@ -543,7 +543,7 @@ function mobileTabbar(active){return `<nav class="mobile-tabbar" aria-label="App
 function renderVehicle(id) {
   disposeViewer?.(); disposeViewer = null;
   const car = carById(decodeURIComponent(id));
-  if (!car || car.make !== "Mercedes-Benz" || car.price == null || !(Number(car.price) >= 0)) { renderNotFound(); return; }
+  if (!car || car.make !== "Mercedes-Benz" || (car.price != null && (!Number.isFinite(Number(car.price)) || Number(car.price) < 0))) { renderNotFound(); return; }
   document.title = `${car.year} Mercedes-Benz ${car.model} | Tristar Motors`;
   const trim = distinctTrim(car);
   const groupedGallery=car.galleryByCategory

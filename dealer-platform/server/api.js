@@ -51,7 +51,7 @@ function mainCarImage(car) {
 }
 
 function hasDisplayablePrice(car) {
-  return car.price !== null && car.price !== undefined && Number.isFinite(Number(car.price)) && Number(car.price) >= 0;
+  return car.price == null || (Number.isFinite(Number(car.price)) && Number(car.price) >= 0);
 }
 
 const DRAFT_FIELDS = new Set(["mediaId", "shortcode", "caption", "date", "permalink", "imageUrls", "parsed", "year", "make", "model", "price", "mileage", "body", "trim"]);
@@ -282,7 +282,7 @@ export function createInventoryApi(inventory, {
   const jsonForHtml = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
   const vehiclePage = async (request, response, car, origin, nonce) => {
     const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} for Sale in Nairobi | Tristar Motors`;
-    const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi. ${Number(car.price) === 0 ? "Ask for price." : `KSh ${Number(car.price).toLocaleString("en-KE")}.`} ${Number(car.mileage) === 0 ? "Inquire about mileage." : `${Number(car.mileage).toLocaleString("en-KE")} km.`} ${car.status === "In Stock" ? "Available" : String(car.status)}. Contact Tristar Motors to arrange a viewing.`;
+    const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi. ${car.price == null || Number(car.price) === 0 ? "Ask for price." : `KSh ${Number(car.price).toLocaleString("en-KE")}.`} ${Number(car.mileage) === 0 ? "Inquire about mileage." : `${Number(car.mileage).toLocaleString("en-KE")} km.`} ${car.status === "In Stock" ? "Available" : String(car.status)}. Contact Tristar Motors to arrange a viewing.`;
     const canonical = `${origin}/cars/${encodeURIComponent(car.id)}`;
     const item = {
       "@context": "https://schema.org", "@type": "Vehicle", name: `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`,
@@ -303,7 +303,7 @@ export function createInventoryApi(inventory, {
     setText("detail-title", `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`);
     setText("detail-badge", car.badge || "Pre-owned Mercedes-Benz");
     setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
-    setText("detail-price", Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`);
+    setText("detail-price", car.price == null || Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`);
     setText("detail-description", car.description || description);
     setText("detail-mileage", Number(car.mileage) === 0 ? "Inquire about mileage" : `${Number(car.mileage).toLocaleString("en-KE")} km`);
     setText("detail-type", car.body || car.type || "Not listed");
@@ -356,7 +356,7 @@ export function createInventoryApi(inventory, {
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
       const href = `/cars/${encodeURIComponent(car.id)}`;
-      return `<article><a href="${esc(href)}"><img src="${esc(mainCarImage(car))}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>${Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`} · ${Number(car.mileage) === 0 ? "Inquire about mileage" : `${Number(car.mileage).toLocaleString("en-KE")} km`} · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
+      return `<article><a href="${esc(href)}"><img src="${esc(mainCarImage(car))}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>${car.price == null || Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`} · ${Number(car.mileage) === 0 ? "Inquire about mileage" : `${Number(car.mileage).toLocaleString("en-KE")} km`} · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
     }).join("");
     html = html.replace(/(<div class="car-grid" id="car-grid"[^>]*>)[\s\S]*?(<\/div>)/, `$1${content}$2`);
     html = html.replace("</body>", `<noscript><section><h2>Cars for sale in Nairobi</h2>${content}</section></noscript></body>`);
