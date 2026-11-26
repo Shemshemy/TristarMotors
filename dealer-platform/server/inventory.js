@@ -121,11 +121,21 @@ export class InventoryDatabase {
     for (const draft of drafts) {
       const id = String(draft.mediaId);
       if (this.pool) {
-        const result = await this.pool.query("INSERT INTO instagram_drafts(media_id,data_json) VALUES($1,$2) ON CONFLICT(media_id) DO NOTHING", [id, draft]);
+        const result = await this.pool.query(`INSERT INTO instagram_drafts(media_id,data_json) VALUES($1,$2)
+          ON CONFLICT(media_id) DO UPDATE SET data_json=instagram_drafts.data_json || jsonb_build_object('imageUrls', EXCLUDED.data_json->'imageUrls'),updated_at=now()
+          WHERE instagram_drafts.status='pending' AND jsonb_array_length(COALESCE(instagram_drafts.data_json->'imageUrls','[]'::jsonb)) < jsonb_array_length(COALESCE(EXCLUDED.data_json->'imageUrls','[]'::jsonb))`, [id, draft]);
         if (result.rowCount) imported += 1;
       } else {
         const result = this.db.prepare("INSERT INTO instagram_drafts(media_id,data_json) VALUES(?,?) ON CONFLICT(media_id) DO NOTHING").run(id, JSON.stringify(draft));
         if (result.changes) imported += 1;
+        else {
+          const current = this.db.prepare("SELECT data_json,status FROM instagram_drafts WHERE media_id=?").get(id);
+          const existing = current && JSON.parse(current.data_json);
+          if (current?.status === "pending" && (draft.imageUrls?.length || 0) > (existing?.imageUrls?.length || 0)) {
+            existing.imageUrls = draft.imageUrls;
+            this.db.prepare("UPDATE instagram_drafts SET data_json=?,updated_at=CURRENT_TIMESTAMP WHERE media_id=? AND status='pending'").run(JSON.stringify(existing), id);
+          }
+        }
       }
     }
     return imported;
@@ -149,6 +159,14 @@ export class InventoryDatabase {
     }
     const result = this.db.prepare("UPDATE instagram_drafts SET data_json=?,updated_at=CURRENT_TIMESTAMP WHERE media_id=? AND status='pending'").run(JSON.stringify(draft), mediaId);
     return result.changes ? this.getInstagramDraft(mediaId) : null;
+  }
+
+  async deleteInstagramDraft(mediaId) {
+    if (this.pool) {
+      const { rowCount } = await this.pool.query("DELETE FROM instagram_drafts WHERE media_id=$1 AND status='pending'", [mediaId]);
+      return rowCount > 0;
+    }
+    return this.db.prepare("DELETE FROM instagram_drafts WHERE media_id=? AND status='pending'").run(mediaId).changes > 0;
   }
 
   async setInstagramDraftStatus(mediaId, status, carId = null) {
