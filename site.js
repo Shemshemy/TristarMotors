@@ -42,6 +42,8 @@ async function loadVehicles() {
         features: Array.isArray(car.features) ? car.features : [],
       };
     });
+  const highestListedPrice = Math.max(0, ...vehicles.map((car) => Number(car.price) || 0));
+  PRICE_RANGE_MAX = Math.max(PRICE_RANGE_MAX, Math.ceil(highestListedPrice / PRICE_RANGE_STEP) * PRICE_RANGE_STEP);
 }
 
 function orderVehicleGallery(car) {
@@ -97,7 +99,7 @@ let activeClass = "all";
 let activeMake = "all";
 let activeType = "all";
 const PRICE_RANGE_MIN = 0;
-const PRICE_RANGE_MAX = 20000000;
+let PRICE_RANGE_MAX = 20000000;
 const PRICE_RANGE_STEP = 250000;
 let activePriceMin = PRICE_RANGE_MIN;
 let activePriceMax = PRICE_RANGE_MAX;
@@ -252,7 +254,7 @@ function renderVehicles() {
   // Render Product Cards
   grid.innerHTML = pageResults.map((car) => {
     const isSaved = savedVehicles.has(car.id);
-    const waText = `Hello Tristar Motors, I am interested in purchasing the ${car.year} Mercedes-Benz ${car.model} (Cash Price: ${money(car.price)}). Is it available to view at your Nairobi showroom?`;
+    const waText = `Hello Tristar Motors, I am interested in purchasing the ${car.year} Mercedes-Benz ${car.model} (Cash Price: ${money(car.price)}). Is it available to view at your Nairobi viewing office?`;
     const waUrl = getWhatsAppUrl(waText);
 
     return `
@@ -374,11 +376,13 @@ function setupHome() {
   const grid = document.querySelector("#car-grid");
   if (!grid) return;
 
+  const minPriceInput = document.querySelector("#min-price-filter");
+  const maxPriceInput = document.querySelector("#max-price-filter");
+  if (minPriceInput) minPriceInput.max = String(PRICE_RANGE_MAX);
+  if (maxPriceInput) maxPriceInput.max = String(PRICE_RANGE_MAX);
   restoreInventoryState();
   const sortSelect = document.querySelector("#sort-select");
   if (sortSelect) sortSelect.value = activeSort;
-  const minPriceInput = document.querySelector("#min-price-filter");
-  const maxPriceInput = document.querySelector("#max-price-filter");
   if (minPriceInput) minPriceInput.value = String(activePriceMin);
   if (maxPriceInput) maxPriceInput.value = String(activePriceMax);
   updatePriceRangeDisplay();
@@ -666,7 +670,7 @@ function setupVehiclePage() {
   setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
   setText("detail-condition", car.condition || "Pre-owned");
   setText("detail-price", money(car.price));
-  setText("detail-description", car.description || "Pre-owned Mercedes-Benz available to view at our Nairobi showroom. Get in touch to ask about this vehicle and the documents available.");
+  setText("detail-description", car.description || "Pre-owned Mercedes-Benz available to view at our Nairobi viewing office. Get in touch to ask about this vehicle and the documents available.");
 
   // Technical Specs
   setText("detail-chassis", car.chassis || "Mercedes-Benz");
