@@ -146,7 +146,9 @@ function validateCar(value, id) {
   const car = { ...value, id, status: value.status || "In Stock" };
   if (!INVENTORY_STATUSES.includes(car.status)) return "Status must be In Stock, Pending, or Sold";
   if (car.mainImageManual !== undefined && typeof car.mainImageManual !== "boolean") return "mainImageManual must be a boolean";
-  if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1886 || Number(car.year) > 2035) return "Year must be between 1886 and 2035";
+  const year = Number(car.year);
+  if (!Number.isInteger(year) || year < 1) return "Year must be a valid positive whole number";
+  if (!String(id).startsWith("instagram-") && (year < 1886 || year > 2035)) return "Year must be between 1886 and 2035";
   if (!String(car.make || "").trim() || !String(car.model || "").trim()) return "Make and model are required";
   if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) < 0)) {
     return "Price must be zero or greater, or null";
