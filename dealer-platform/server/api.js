@@ -46,6 +46,10 @@ function publicCar(car) {
   return Object.fromEntries(Object.entries(car).filter(([field]) => PUBLIC_CAR_FIELDS.has(field)));
 }
 
+function mainCarImage(car) {
+  return car.image || car.galleryByCategory?.front?.[0] || car.gallery?.[0] || "";
+}
+
 const DRAFT_FIELDS = new Set(["mediaId", "shortcode", "caption", "date", "permalink", "imageUrls", "parsed", "year", "make", "model", "price", "mileage", "body", "trim"]);
 const INSTAGRAM_IMAGE_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com"];
 
@@ -277,12 +281,12 @@ export function createInventoryApi(inventory, {
     const item = {
       "@context": "https://schema.org", "@type": "Vehicle", name: `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`,
       brand: { "@type": "Brand", name: car.make }, model: car.model, vehicleModelDate: String(car.year), bodyType: car.body || car.type,
-      mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" }, image: [car.image, ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
+      mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" }, image: [mainCarImage(car), ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
       description: car.description || description, offers: { "@type": "Offer", url: canonical, price: Number(car.price), priceCurrency: "KES", availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: { "@type": "PostalAddress", addressLocality: "Nairobi", addressCountry: "KE" }, hasMap: "https://maps.app.goo.gl/BL8tkatuVavFeiKg6" } },
     };
     const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
     const template = await readFile(htmlPath, "utf8");
-    const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(car.image, origin).href)}"><meta property="og:type" content="product"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(item)}</script>`;
+    const seo = `<link rel="canonical" href="${esc(canonical)}"><meta name="description" content="${esc(description)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(new URL(mainCarImage(car), origin).href)}"><meta property="og:type" content="product"><script nonce="${nonce}" type="application/ld+json">${jsonForHtml(item)}</script>`;
     let html = template.replace(/<title>.*?<\/title>/i, `<title>${esc(title)}</title>`)
       .replace(/<meta name="description"[^>]*>/i, "")
       .replace("</head>", `${seo}</head>`);
@@ -308,7 +312,7 @@ export function createInventoryApi(inventory, {
     setText("detail-interior", car.interior || "Not listed");
     setText("detail-condition", car.condition || "Pre-owned");
     html = html.replace(/<img id="detail-image"[^>]*>/i,
-      `<img id="detail-image" src="${esc(new URL(car.image, origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" fetchpriority="high">`);
+      `<img id="detail-image" src="${esc(new URL(mainCarImage(car), origin).href)}" alt="${esc(`${car.year} ${car.make} ${car.model} exterior`)}" fetchpriority="high">`);
     const featureList = Array.isArray(car.features) && car.features.length
       ? car.features.map((feature) => `<li>${esc(feature)}</li>`).join("")
       : `<li>Contact us for available vehicle details.</li>`;
@@ -346,7 +350,7 @@ export function createInventoryApi(inventory, {
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
       const href = `/cars/${encodeURIComponent(car.id)}`;
-      return `<article><a href="${esc(href)}"><img src="${esc(car.image || "")}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>KSh ${Number(car.price).toLocaleString("en-KE")} · ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
+      return `<article><a href="${esc(href)}"><img src="${esc(mainCarImage(car))}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>KSh ${Number(car.price).toLocaleString("en-KE")} · ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
     }).join("");
     html = html.replace(/(<div class="car-grid" id="car-grid"[^>]*>)[\s\S]*?(<\/div>)/, `$1${content}$2`);
     html = html.replace("</body>", `<noscript><section><h2>Cars for sale in Nairobi</h2>${content}</section></noscript></body>`);
