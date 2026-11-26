@@ -32,7 +32,7 @@ const allowedFields = new Set([
   "id", "year", "make", "model", "trim", "body", "price", "mileage", "transmission",
   "engine", "fuel", "vin", "status", "badges", "image", "gallery", "galleryByCategory", "frames", "frameBase",
   "class", "type", "chassis", "drivetrain", "power", "acceleration", "color", "interior",
-  "condition", "description", "features", "badge", "inspectionPoints",
+  "condition", "description", "features", "badge", "inspectionPoints", "mainImageManual",
 ]);
 
 const PUBLIC_CAR_FIELDS = new Set([
@@ -141,6 +141,7 @@ function validateCar(value, id) {
   }
   const car = { ...value, id, status: value.status || "In Stock" };
   if (!INVENTORY_STATUSES.includes(car.status)) return "Status must be In Stock, Pending, or Sold";
+  if (car.mainImageManual !== undefined && typeof car.mainImageManual !== "boolean") return "mainImageManual must be a boolean";
   if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1886 || Number(car.year) > 2035) return "Year must be between 1886 and 2035";
   if (!String(car.make || "").trim() || !String(car.model || "").trim()) return "Make and model are required";
   if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) <= 0)) {
