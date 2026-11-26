@@ -147,8 +147,7 @@ function validateCar(value, id) {
   if (!INVENTORY_STATUSES.includes(car.status)) return "Status must be In Stock, Pending, or Sold";
   if (car.mainImageManual !== undefined && typeof car.mainImageManual !== "boolean") return "mainImageManual must be a boolean";
   const year = Number(car.year);
-  if (!Number.isInteger(year) || year < 1) return "Year must be a valid positive whole number";
-  if (!String(id).startsWith("instagram-") && (year < 1886 || year > 2035)) return "Year must be between 1886 and 2035";
+  if (!String(id).startsWith("instagram-") && (!Number.isInteger(year) || year < 1886 || year > 2035)) return "Year must be between 1886 and 2035";
   if (!String(car.make || "").trim() || !String(car.model || "").trim()) return "Make and model are required";
   if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) < 0)) {
     return "Price must be zero or greater, or null";
@@ -584,7 +583,9 @@ export function createInventoryApi(inventory, {
           return;
         }
         const value = await readJson(request);
-        const car = { ...value.car, id: `instagram-${mediaId.toLowerCase()}`, status: "In Stock", make: String(value.car?.make || "").trim(), model: String(value.car?.model || "").trim(), year: Number(value.car?.year), price: value.car?.price == null ? 0 : Number(value.car.price), mileage: value.car?.mileage == null ? 0 : Number(value.car.mileage), description: String(value.car?.description || draft.caption || "").trim() };
+        const rawYear = value.car?.year;
+        const numericYear = rawYear == null || String(rawYear).trim() === "" ? null : Number(rawYear);
+        const car = { ...value.car, id: `instagram-${mediaId.toLowerCase()}`, status: "In Stock", make: String(value.car?.make || "").trim(), model: String(value.car?.model || "").trim(), year: Number.isInteger(numericYear) && numericYear > 0 ? numericYear : null, price: value.car?.price == null ? 0 : Number(value.car.price), mileage: value.car?.mileage == null ? 0 : Number(value.car.mileage), description: String(value.car?.description || draft.caption || "").trim() };
         if (!Number.isFinite(Number(car.price)) || Number(car.price) < 0) { send(response, 400, { error: "Set a valid asking price before publishing this listing" }); return; }
         if (!Array.isArray(draft.imageUrls) || !draft.imageUrls.length) { send(response, 400, { error: "This post has no usable image; edit the listing manually before publishing" }); return; }
         if (await inventory.get(car.id)) { send(response, 409, { error: "This Instagram post already has a vehicle listing" }); return; }
