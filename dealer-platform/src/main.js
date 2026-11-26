@@ -426,7 +426,7 @@ async function uploadSelectedPhotos() {
     updateUploadProgressView();
   };
   let uploadedCount = 0;
-  let frontAssigned = false;
+  let mainImageAssigned = false;
   try {
     for (const [category] of photoCategories) {
       while (pendingPhotoFiles[category].length) {
@@ -446,10 +446,10 @@ async function uploadSelectedPhotos() {
         draftGallery[category].push(uploaded.url);
         pendingPhotoFiles[category].shift();
         URL.revokeObjectURL(photo.preview);
-        if (category === "front" && !frontAssigned) {
+        if (!mainImageAssigned) {
           const mainImage = document.querySelector('#car-form [name="image"]');
-          if (mainImage && document.querySelector('#car-form [name="mainImageManual"]')?.value !== "true") mainImage.value = uploaded.url;
-          frontAssigned = true;
+          if (mainImage && !mainImage.value && document.querySelector('#car-form [name="mainImageManual"]')?.value !== "true") mainImage.value = uploaded.url;
+          mainImageAssigned = true;
         }
         uploadedCount += 1;
         uploadProgress.complete = uploadedCount;
