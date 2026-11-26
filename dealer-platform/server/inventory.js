@@ -102,9 +102,8 @@ export class InventoryDatabase {
   }
 
   list() {
-    const order = (cars) => cars.sort((a, b) => Number(b.status === "In Stock") - Number(a.status === "In Stock"));
-    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY created_at,id").then(({ rows }) => order(rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status }))));
-    return order(this.db.prepare("SELECT data_json,status FROM inventory ORDER BY rowid").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status })));
+    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY created_at DESC,id DESC").then(({ rows }) => rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status })));
+    return this.db.prepare("SELECT data_json,status FROM inventory ORDER BY rowid DESC").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status }));
   }
 
   async listInstagramDrafts() {

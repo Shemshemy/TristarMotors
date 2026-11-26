@@ -210,12 +210,29 @@ async function apiRequest(path, options = {}) {
   });
   let result;
   try {
-    result = await response.json();
+    const body = await response.text();
+    result = body ? JSON.parse(body) : {};
   } catch {
-    throw new Error(`Inventory service returned an invalid response (${response.status})`);
+    const error = new Error(`Inventory service returned an invalid response (${response.status})`);
+    error.status = response.status;
+    throw error;
   }
-  if (!response.ok) throw new Error(result.error || `Inventory service request failed (${response.status})`);
+  if (!response.ok) {
+    const error = new Error(result.error || `Inventory service request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
   return result;
+}
+async function apiRequestWithRetry(path, options = {}, retries = 2) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await apiRequest(path, options);
+    } catch (error) {
+      if (attempt >= retries || ![502, 503, 504, 520, 522, 524].includes(error.status)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
 }
 async function refreshInventory() {
   store.cars = await apiRequest("/api/cars");
@@ -310,10 +327,11 @@ function readDraftGallery(car) {
 function renderGalleryUploadWorkspace() {
   const root = document.querySelector("#gallery-upload-workspace");
   if (!root) return;
+  const mainImageUrl = document.querySelector('#car-form [name="image"]')?.value || "";
   root.innerHTML = `${photoCategories.map(([key, label]) => {
     const saved = draftGallery[key] || [];
     const pending = pendingPhotoFiles[key] || [];
-    return `<section class="photo-category"><div class="photo-category-heading"><h3>${label}</h3><span>${saved.length} uploaded · ${pending.length} selected</span></div><label class="photo-file-picker"><span>Select ${label.toLowerCase()}</span><input type="file" accept="image/*" multiple data-photo-category="${key}" aria-label="Select ${label} vehicle pictures" ${uploadInProgress ? "disabled" : ""}></label><div class="photo-preview-grid">${saved.map((url, index) => `<figure class="photo-preview saved"><img src="${escapeHTML(url)}" alt="${label} vehicle view ${index + 1}" loading="lazy"><figcaption>Uploaded</figcaption>${key === "front" ? `<button type="button" class="photo-use-main" data-use-main="${escapeHTML(url)}">Use as main picture</button>` : ""}</figure>`).join("")}${pending.map((photo, index) => `<figure class="photo-preview"><img src="${photo.preview}" alt="Preview of ${escapeHTML(photo.file.name)}"><figcaption>${escapeHTML(photo.file.name)} · preview</figcaption><button type="button" class="photo-remove-pending" data-remove-photo="${key}" data-photo-index="${index}" aria-label="Remove ${escapeHTML(photo.file.name)} from selection">Remove</button></figure>`).join("")}</div></section>`;
+    return `<section class="photo-category"><div class="photo-category-heading"><h3>${label}</h3><span>${saved.length} uploaded · ${pending.length} selected</span></div><label class="photo-file-picker"><span>Select ${label.toLowerCase()}</span><input type="file" accept="image/*" multiple data-photo-category="${key}" aria-label="Select ${label} vehicle pictures" ${uploadInProgress ? "disabled" : ""}></label><div class="photo-preview-grid">${saved.map((url, index) => `<figure class="photo-preview saved ${url === mainImageUrl ? "is-main" : ""}"><button type="button" class="photo-main-select" data-action="use-main" data-use-main="${escapeHTML(url)}" aria-label="Use ${label.toLowerCase()} picture ${index + 1} as the main picture"><img src="${escapeHTML(url)}" alt="${label} vehicle view ${index + 1}" loading="lazy"><span>${url === mainImageUrl ? "Main picture ✓" : "Click to use as main picture"}</span></button><figcaption>Uploaded</figcaption></figure>`).join("")}${pending.map((photo, index) => `<figure class="photo-preview"><img src="${photo.preview}" alt="Preview of ${escapeHTML(photo.file.name)}"><figcaption>${escapeHTML(photo.file.name)} · preview</figcaption><button type="button" class="photo-remove-pending" data-remove-photo="${key}" data-photo-index="${index}" aria-label="Remove ${escapeHTML(photo.file.name)} from selection">Remove</button></figure>`).join("")}</div></section>`;
   }).join("")}<div class="photo-upload-actions"><button class="btn btn-light" type="button" data-action="upload-photos" ${uploadInProgress || !photoCategories.some(([key]) => pendingPhotoFiles[key].length) ? "disabled" : ""}>${uploadInProgress ? "Converting and uploading…" : "Upload selected photos"}</button>${uploadProgress ? `<div class="photo-upload-progress" aria-live="polite"><div class="photo-upload-progress-label"><span id="photo-upload-progress-label">${escapeHTML(uploadProgressLabel())}</span><strong id="photo-upload-progress-count">${uploadProgress.complete} / ${uploadProgress.total}</strong></div><progress id="photo-upload-progress-bar" value="${uploadProgress.complete}" max="${uploadProgress.total}" aria-label="Photo upload progress"></progress></div>` : ""}<p class="photo-upload-status" id="photo-upload-status" role="status">Upload photos, then choose Save vehicle to attach them to this listing. Add at least one front photo.</p></div>`;
   const statusNode = root.querySelector("#photo-upload-status");
   if (statusNode) {
@@ -859,6 +877,10 @@ function renderAdmin(){
     const fields={year:Number(form.get("year")),make:String(form.get("make")||"Mercedes-Benz").trim(),model:String(form.get("model")).trim(),trim:String(form.get("trim")||"").trim(),body:String(form.get("body")||"Sedan"),price:parsedPrice,mileage:Number(form.get("mileage")||0),transmission:String(form.get("transmission")||"7G-TRONIC Plus Auto").trim(),engine:String(form.get("engine")||"").trim(),class:String(form.get("class")||"C-Class").trim(),chassis:String(form.get("chassis")||"").trim(),drivetrain:String(form.get("drivetrain")||"RWD").trim(),power:String(form.get("power")||"").trim(),acceleration:String(form.get("acceleration")||"").trim(),color:String(form.get("color")||"Polar White").trim(),interior:String(form.get("interior")||"Black Leather").trim(),condition:String(form.get("condition")||"Pre-owned").trim(),description:String(form.get("description")||"").trim(),features:String(form.get("featuresText")).split(/\r?\n/).map(value=>value.trim()).filter(Boolean),type:String(form.get("body")||"Sedan"),fuel:String(form.get("fuel")||"Petrol").trim(),vin:String(form.get("vin")||"").trim().toUpperCase(),status:String(form.get("status")||"In Stock"),image:String(form.get("image")).trim(),badges:String(form.get("badges")||"").split(",").map(s=>s.trim()).filter(Boolean)};
     if (instagramDraftEditId) {
       const mediaId = instagramDraftEditId;
+      const draftImages = photoCategories.flatMap(([key]) => draftGallery[key] || []);
+      const orderedDraftImages = fields.image
+        ? [fields.image, ...draftImages.filter((image) => image !== fields.image)]
+        : draftImages;
       const draftFields = {
         year: fields.year, make: fields.make, model: fields.model, trim: fields.trim,
         body: fields.body, price: fields.price, mileage: fields.mileage,
@@ -867,10 +889,10 @@ function renderAdmin(){
         acceleration: fields.acceleration, color: fields.color, interior: fields.interior,
         condition: fields.condition, description: fields.description, features: fields.features,
         fuel: fields.fuel, vin: fields.vin, status: fields.status, badges: fields.badges,
-        imageUrls: photoCategories.flatMap(([key]) => draftGallery[key] || []),
+        imageUrls: orderedDraftImages,
       };
       try {
-        await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}`, { method: "PATCH", body: JSON.stringify({ fields: draftFields }) });
+        await apiRequestWithRetry(`/api/instagram/drafts/${encodeURIComponent(mediaId)}`, { method: "PATCH", body: JSON.stringify({ fields: draftFields }) });
         vehicleSaveInProgress = false; instagramDraftEditId = null; vehicleModalOpen = false; vehicleStep = "details";
         draftGallery = emptyDraftGallery(); pendingPhotoFiles = emptyDraftGallery();
         document.querySelector("#vehicle-editor")?.close(); unlockPageScroll(); renderAdmin(); toast("Instagram draft updated");
@@ -885,7 +907,8 @@ function renderAdmin(){
     fields.id=editId||`${fields.make}-${fields.model}`.toLowerCase().replace(/[^a-z0-9]+/g,"-");fields.badge=String(form.get("badges")).split(",").map(value=>value.trim()).filter(Boolean)[0]||"Available";fields.galleryByCategory=structuredClone(draftGallery);fields.gallery=photoCategories.flatMap(([key])=>fields.galleryByCategory[key]);if(!fields.gallery.length)fields.gallery=[fields.image];fields.frameBase=base;fields.frames=base.includes("{frame}")?Array.from({length:24},(_,i)=>base.replace("{frame}",String(i+1).padStart(2,"0"))):[];
     try {
       const method=editId?"PUT":"POST";
-      const savedCar=await apiRequest(editId?`/api/cars/${encodeURIComponent(fields.id)}`:"/api/cars",{method,body:JSON.stringify(fields)});
+      const saveRequest = editId ? apiRequestWithRetry : apiRequest;
+      const savedCar=await saveRequest(editId?`/api/cars/${encodeURIComponent(fields.id)}`:"/api/cars",{method,body:JSON.stringify(fields)});
       if(editId)store.cars=store.cars.map(car=>car.id===savedCar.id?savedCar:car);
       else store.cars=[savedCar,...store.cars];
       await clearVehicleDraft();
@@ -896,7 +919,7 @@ function renderAdmin(){
       vehicleSaveInProgress=false;
       const saveButton=formElement.querySelector("#save-vehicle-button");
       if(saveButton){saveButton.disabled=false;saveButton.textContent=editId?"Save changes":"Save vehicle";}
-      setCarFormError(`Could not save vehicle: ${error.message}. Your uploaded photos are still available; correct the details and retry.`);
+      setCarFormError(`Could not save vehicle: ${error.message}. Your form and uploaded photos are still here; retry the save without uploading them again.`);
     }
   });
 }
@@ -1162,7 +1185,7 @@ function handleClick(event){
   if(action==="upload-photos"){uploadSelectedPhotos();return;}
   if(action==="toggle-feature-pill"){const f=button.dataset.feature;if(f)toggleFeaturePill(f);scheduleVehicleDraftSave();return;}
   if(action==="auto-generate-description"){autoGenerateDescription();scheduleVehicleDraftSave();return;}
-  if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;scheduleVehicleDraftSave();toast("Main vehicle picture updated");return;}
+  if(action==="use-main"){const input=document.querySelector('#car-form [name="image"]');if(input)input.value=button.dataset.useMain;renderGalleryUploadWorkspace();scheduleVehicleDraftSave();toast("Main vehicle picture updated");return;}
   if(action==="clear-filters"){currentFilters={make:"all",model:"all",year:"all",body:"all",maxPrice:"all",maxMileage:"all",availability:"all",fuel:"all",transmission:"all",search:"",saved:false};mobileCategory="All";renderHome();}
   if(action==="toggle-search-filters"){searchExpanded=!searchExpanded;document.querySelector("#advanced-search")?.classList.toggle("expanded",searchExpanded);button.setAttribute("aria-expanded",String(searchExpanded));button.setAttribute("aria-label",`${searchExpanded?"Hide":"Show"} search filters`);}
   if(action==="toggle-filters")document.querySelector("#filter-panel")?.classList.toggle("expanded");

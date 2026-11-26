@@ -56,6 +56,17 @@ function validInstagramImageUrl(value) {
   } catch { return false; }
 }
 
+function validStoredImageUrl(value, objectStorage) {
+  if (!objectStorage?.publicBaseUrl || typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    const base = new URL(objectStorage.publicBaseUrl);
+    const basePath = base.pathname.replace(/\/+$/, "");
+    return url.protocol === "https:" && url.origin === base.origin && !url.username && !url.password &&
+      url.pathname.startsWith(`${basePath}/cars/`);
+  } catch { return false; }
+}
+
 async function importInstagramImage(url, objectStorage) {
   if (!validInstagramImageUrl(url)) throw Object.assign(new Error("Instagram image URL is not allowed"), { status: 400 });
   const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(20_000) });
@@ -532,8 +543,8 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error: "Draft edits contain unsupported fields" });
           return;
         }
-        if (values.imageUrls !== undefined && (!Array.isArray(values.imageUrls) || values.imageUrls.length > 20 || values.imageUrls.some((image) => !validInstagramImageUrl(image)))) {
-          send(response, 400, { error: "Draft images must contain up to 20 valid Instagram image URLs" }); return;
+        if (values.imageUrls !== undefined && (!Array.isArray(values.imageUrls) || values.imageUrls.length > 20 || values.imageUrls.some((image) => !validInstagramImageUrl(image) && !validStoredImageUrl(image, objectStorage)))) {
+          send(response, 400, { error: "Draft images must contain up to 20 Instagram or uploaded vehicle photos" }); return;
         }
         for (const key of ["year", "price", "mileage"]) {
           if (values[key] === "" || values[key] === null) values[key] = null;
@@ -559,7 +570,7 @@ export function createInventoryApi(inventory, {
         if (!Array.isArray(draft.imageUrls) || !draft.imageUrls.length) { send(response, 400, { error: "This post has no usable image; edit the listing manually before publishing" }); return; }
         if (await inventory.get(car.id)) { send(response, 409, { error: "This Instagram post already has a vehicle listing" }); return; }
         const imageUrls = objectStorage?.configured
-          ? await Promise.all(draft.imageUrls.map((image) => importInstagramImage(image, objectStorage)))
+          ? await Promise.all(draft.imageUrls.map((image) => validInstagramImageUrl(image) ? importInstagramImage(image, objectStorage) : image))
           : draft.imageUrls;
         car.image = imageUrls[0];
         car.galleryByCategory = { front: [imageUrls[0]], other: imageUrls.slice(1) };
