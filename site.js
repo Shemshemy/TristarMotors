@@ -26,14 +26,15 @@ async function loadVehicles() {
   }
   inventoryUnavailable = false;
   vehicles = cars
-    .filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0)
+    .filter((car) => car.make === "Mercedes-Benz" && (car.price == null || (Number.isFinite(Number(car.price)) && Number(car.price) >= 0)))
     .map((car) => {
       const gallery = orderVehicleGallery(car);
       return {
         ...car,
         class: car.class || car.model,
         type: car.type || car.body || "Sedan",
-        mileage: `${new Intl.NumberFormat("en-US").format(Number(car.mileage) || 0)} km`,
+        mileageValue: Number(car.mileage) || 0,
+        mileage: Number(car.mileage) === 0 ? "Inquire about mileage" : `${new Intl.NumberFormat("en-US").format(Number(car.mileage))} km`,
         image: gallery[0] || car.image || "/images/cars/g350d_front.jpg",
         gallery,
         badge: car.status === "In Stock" ? (car.badge || car.badges?.[0] || "Available") : car.status,
@@ -74,7 +75,7 @@ function orderVehicleGallery(car) {
 }
 
 // Helper: Money Formatter
-const money = (amount) => `KSh ${new Intl.NumberFormat("en-KE").format(Number(amount) || 0)}`;
+const money = (amount) => amount == null || Number(amount) === 0 ? "Ask for price" : `KSh ${new Intl.NumberFormat("en-KE").format(Number(amount))}`;
 const escapeHTML = (value="") => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch]));
 
 // Helper: Direct WhatsApp Link Generator for Kenyan Dealer
@@ -219,7 +220,7 @@ function renderVehicles() {
     if (activeSort === "price-asc") return a.price - b.price;
     if (activeSort === "price-desc") return b.price - a.price;
     if (activeSort === "year-desc") return b.year - a.year;
-    if (activeSort === "mileage-asc") return parseInt(a.mileage.replace(/\D/g, "")) - parseInt(b.mileage.replace(/\D/g, ""));
+    if (activeSort === "mileage-asc") return a.mileageValue - b.mileageValue;
     return 0;
   };
   results.sort((a, b) => Number(b.status === "In Stock") - Number(a.status === "In Stock") || secondarySort(a, b));
