@@ -752,7 +752,7 @@ async function approveInstagramDraft(mediaId, button) {
   try {
     const result = await apiRequest(`/api/instagram/drafts/${encodeURIComponent(mediaId)}/approve`, {
       method: "POST",
-      body: JSON.stringify({ car: { ...fields, trim: draft.parsed?.trim || "", transmission: "Automatic", engine: "", fuel: "Petrol", class: "Mercedes-Benz", description: draft.caption || "" } }),
+      body: JSON.stringify({ car: { ...fields, trim: draft.parsed?.trim || "", transmission: "Automatic", engine: "", fuel: "Petrol", class: "Mercedes-Benz", description: draft.description || draft.caption || "" } }),
     });
     approvalFinished = true;
     if (bar) bar.value = 100;
