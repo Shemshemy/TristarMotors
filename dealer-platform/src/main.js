@@ -286,7 +286,7 @@ function header() {
   return `<header class="site-header admin-site-header"><div class="shell header-main">
     <a class="logo" href="/" aria-label="Tristar Motors home"><img src="/images/brand/tristarmotors.png" alt="Tristar Motors"></a>
     <a class="admin-back-site" href="/" aria-label="Back to the website"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5 7 12l7 7M7 12h14"/></svg><span>Back to site</span></a>
-    ${adminSession?.authenticated?`<div class="admin-user-tools"><div class="admin-user"><span class="admin-avatar" aria-hidden="true">A</span><span class="admin-user-copy"><strong>Allan</strong></span></div><button class="admin-logout-button" type="button" data-action="admin-logout" aria-label="Log out Allan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/></svg><span>Log out</span></button></div>`:""}
+    ${adminSession?.authenticated?`<div class="admin-user-tools"><div class="admin-user"><span class="admin-avatar" aria-hidden="true">A</span><span class="admin-user-copy"><strong>Admin</strong></span></div><button class="admin-logout-button" type="button" data-action="admin-logout" aria-label="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/></svg><span>Log out</span></button></div>`:""}
   </div></header>`;
 }
 function footer() {
@@ -620,7 +620,7 @@ function statusControl(car) {
 
 function renderAdminLogin() {
   const configured = adminSession?.configured;
-  app.innerHTML = `${header()}<main class="shell admin-shell"><section class="admin-login-card"><p class="eyebrow">TRISTAR MOTORS · ADMIN</p><h1>Administrator sign in</h1>${configured ? `<p>Sign in to manage vehicle listings.</p><form id="admin-login-form"><label class="field"><span class="field-label">Administrator</span><input name="username" value="Allan" readonly autocomplete="username"></label><label class="field"><span class="field-label">Password</span><input name="password" type="password" required autocomplete="current-password"></label><p class="login-error" id="login-error" role="alert"></p><button class="btn btn-primary" type="submit">Sign in</button></form>` : adminSession?.error ? `<p>Could not connect to the admin server. Start the site server, then reload this page.</p>` : `<p>Administrator sign-in is not set up. Add TRISTAR_ADMIN_PASSWORD in the server settings, then reload this page.</p>`}<p class="admin-local-note">If you’re locked out, change <code>TRISTAR_ADMIN_PASSWORD</code> in your Render service’s Environment settings, then redeploy.</p></section></main>${footer()}<div class="toast hidden"></div>`;
+  app.innerHTML = `${header()}<main class="shell admin-shell"><section class="admin-login-card"><p class="eyebrow">TRISTAR MOTORS · ADMIN</p><h1>Administrator sign in</h1>${configured ? `<p>Sign in to manage vehicle listings.</p><form id="admin-login-form"><label class="field"><span class="field-label">Password</span><input name="password" type="password" required autocomplete="current-password"></label><p class="login-error" id="login-error" role="alert"></p><button class="btn btn-primary" type="submit">Sign in</button></form>` : adminSession?.error ? `<p>Could not connect to the admin server. Start the site server, then reload this page.</p>` : `<p>Administrator sign-in is not set up. Add TRISTAR_ADMIN_PASSWORD in the server settings, then reload this page.</p>`}<p class="admin-local-note">If you’re locked out, change <code>TRISTAR_ADMIN_PASSWORD</code> in your Render service’s Environment settings, then redeploy.</p></section></main>${footer()}<div class="toast hidden"></div>`;
   document.querySelector("#admin-login-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -631,7 +631,7 @@ function renderAdminLogin() {
     try {
       adminSession = await apiRequest("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username: String(form.get("username")), password: String(form.get("password")) }),
+        body: JSON.stringify({ username: "Allan", password: String(form.get("password")) }),
       });
       renderAdmin();
     } catch (error) {
