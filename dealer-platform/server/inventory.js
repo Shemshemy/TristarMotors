@@ -102,8 +102,8 @@ export class InventoryDatabase {
   }
 
   list() {
-    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY created_at DESC,id DESC").then(({ rows }) => rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status })));
-    return this.db.prepare("SELECT data_json,status FROM inventory ORDER BY rowid DESC").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status }));
+    if (this.pool) return this.pool.query("SELECT data_json,status FROM inventory ORDER BY CASE status WHEN 'In Stock' THEN 0 WHEN 'Pending' THEN 1 ELSE 2 END, created_at DESC, id DESC").then(({ rows }) => rows.map((row) => ({ ...normalizeCar(row.data_json), status: row.status })));
+    return this.db.prepare("SELECT data_json,status FROM inventory ORDER BY CASE status WHEN 'In Stock' THEN 0 WHEN 'Pending' THEN 1 ELSE 2 END, rowid DESC").all().map((row) => ({ ...normalizeCar(JSON.parse(row.data_json)), status: row.status }));
   }
 
   async listInstagramDrafts() {

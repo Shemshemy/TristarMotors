@@ -710,6 +710,10 @@ export function createInventoryApi(inventory, {
           send(response, 400, { error: "Vehicle id must use lowercase letters, numbers, and hyphens" });
           return;
         }
+        if (id.startsWith("instagram-")) {
+          send(response, 400, { error: "Instagram drafts must be approved from the drafts queue before publishing" });
+          return;
+        }
         if (await inventory.get(id)) {
           send(response, 409, { error: "A vehicle with that id already exists" });
           return;

@@ -558,4 +558,11 @@ test("rejects untrusted Instagram draft images and prioritizes available cars in
   const positions = Object.fromEntries(cars.map((car, index) => [car.id, index]));
   assert.ok(positions["available-low-price"] < positions["sold-high-price"]);
   assert.ok(positions["available-low-price"] < positions["pending-mid-price"]);
+
+  const directDraftPost = await adminFetch("/api/cars", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: "instagram-unapproved-draft", year: 2024, make: "Mercedes-Benz", model: "C200", mileage: 0 }),
+  });
+  assert.equal(directDraftPost.status, 400);
 });
