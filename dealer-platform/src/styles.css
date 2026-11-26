@@ -1254,6 +1254,8 @@ body.modal-open{overflow:hidden}
 }
 .instagram-draft-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .instagram-draft-actions .btn,.instagram-draft-actions .table-action { min-height: 34px; font-size: 11px; }
+.instagram-approval-progress { display:grid; flex:1 0 100%; gap:6px; margin-top:4px; color:#475149; font-size:12px; }
+.instagram-approval-progress progress { width:100%; height:8px; accent-color:#216744; }
 .instagram-draft-edit-actions { display: flex; gap: 8px; margin-top: 18px; }
 .instagram-draft-error { min-height: 0; margin: 7px 0 0; color: #b42318; font-size: 11px; }
 @media (max-width: 760px) {

@@ -50,6 +50,10 @@ function mainCarImage(car) {
   return car.image || car.galleryByCategory?.front?.[0] || car.gallery?.[0] || "";
 }
 
+function hasDisplayablePrice(car) {
+  return car.price !== null && car.price !== undefined && Number.isFinite(Number(car.price)) && Number(car.price) >= 0;
+}
+
 const DRAFT_FIELDS = new Set(["mediaId", "shortcode", "caption", "date", "permalink", "imageUrls", "parsed", "year", "make", "model", "price", "mileage", "body", "trim"]);
 const INSTAGRAM_IMAGE_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com"];
 
@@ -144,8 +148,8 @@ function validateCar(value, id) {
   if (car.mainImageManual !== undefined && typeof car.mainImageManual !== "boolean") return "mainImageManual must be a boolean";
   if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1886 || Number(car.year) > 2035) return "Year must be between 1886 and 2035";
   if (!String(car.make || "").trim() || !String(car.model || "").trim()) return "Make and model are required";
-  if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) <= 0)) {
-    return "Price must be a positive number or null";
+  if (car.price !== null && (!Number.isFinite(Number(car.price)) || Number(car.price) < 0)) {
+    return "Price must be zero or greater, or null";
   }
   if (!Number.isFinite(Number(car.mileage)) || Number(car.mileage) < 0) return "Mileage must be zero or greater";
   for (const field of ["badges", "gallery", "frames", "features", "inspectionPoints"]) {
@@ -263,6 +267,7 @@ export function createInventoryApi(inventory, {
   rateLimiter = new RateLimiter(),
 } = {}) {
   const auth = new AdminAuth(adminPassword, { passwordFilePath });
+  const approvalProgress = new Map();
   const configuredSiteUrl = process.env.TRISTAR_SITE_URL || process.env.RENDER_EXTERNAL_URL ||
     (process.env.NODE_ENV === "production" ? "https://tristarmotors.co.ke" : "");
   const siteOrigin = (request) => {
@@ -277,13 +282,13 @@ export function createInventoryApi(inventory, {
   const jsonForHtml = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
   const vehiclePage = async (request, response, car, origin, nonce) => {
     const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""} for Sale in Nairobi | Tristar Motors`;
-    const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi for KSh ${Number(car.price).toLocaleString("en-KE")}. ${Number(car.mileage).toLocaleString("en-KE")} km, ${car.status === "In Stock" ? "available" : String(car.status).toLowerCase()}. Contact Tristar Motors to arrange a viewing.`;
+    const description = `${car.year} ${car.make} ${car.model} for sale in Nairobi. ${Number(car.price) === 0 ? "Ask for price." : `KSh ${Number(car.price).toLocaleString("en-KE")}.`} ${Number(car.mileage) === 0 ? "Inquire about mileage." : `${Number(car.mileage).toLocaleString("en-KE")} km.`} ${car.status === "In Stock" ? "Available" : String(car.status)}. Contact Tristar Motors to arrange a viewing.`;
     const canonical = `${origin}/cars/${encodeURIComponent(car.id)}`;
     const item = {
       "@context": "https://schema.org", "@type": "Vehicle", name: `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`,
       brand: { "@type": "Brand", name: car.make }, model: car.model, vehicleModelDate: String(car.year), bodyType: car.body || car.type,
-      mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" }, image: [mainCarImage(car), ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
-      description: car.description || description, offers: { "@type": "Offer", url: canonical, price: Number(car.price), priceCurrency: "KES", availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: { "@type": "PostalAddress", addressLocality: "Nairobi", addressCountry: "KE" }, hasMap: "https://maps.app.goo.gl/BL8tkatuVavFeiKg6" } },
+      ...(Number(car.mileage) > 0 ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: Number(car.mileage), unitCode: "KMT" } } : {}), image: [mainCarImage(car), ...(car.gallery || [])].filter(Boolean).map((image) => new URL(image, origin).href),
+      description: car.description || description, offers: { "@type": "Offer", url: canonical, ...(Number(car.price) > 0 ? { price: Number(car.price), priceCurrency: "KES" } : {}), availability: car.status === "In Stock" ? "https://schema.org/InStock" : car.status === "Sold" ? "https://schema.org/SoldOut" : "https://schema.org/LimitedAvailability", itemCondition: "https://schema.org/UsedCondition", seller: { "@type": "AutoDealer", name: "Tristar Motors", address: { "@type": "PostalAddress", addressLocality: "Nairobi", addressCountry: "KE" }, hasMap: "https://maps.app.goo.gl/BL8tkatuVavFeiKg6" } },
     };
     const htmlPath = staticFilePath(staticDirectory, "/vehicle.html");
     const template = await readFile(htmlPath, "utf8");
@@ -298,9 +303,9 @@ export function createInventoryApi(inventory, {
     setText("detail-title", `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`);
     setText("detail-badge", car.badge || "Pre-owned Mercedes-Benz");
     setText("detail-status", car.status === "In Stock" ? "Available for viewing" : car.status);
-    setText("detail-price", `KSh ${Number(car.price).toLocaleString("en-KE")}`);
+    setText("detail-price", Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`);
     setText("detail-description", car.description || description);
-    setText("detail-mileage", `${Number(car.mileage).toLocaleString("en-KE")} km`);
+    setText("detail-mileage", Number(car.mileage) === 0 ? "Inquire about mileage" : `${Number(car.mileage).toLocaleString("en-KE")} km`);
     setText("detail-type", car.body || car.type || "Not listed");
     setText("detail-transmission", car.transmission || "Not listed");
     setText("detail-fuel", car.fuel || "Not listed");
@@ -347,11 +352,11 @@ export function createInventoryApi(inventory, {
     html = html.replace(/<link rel="canonical" href="[^"]*">/i, `<link rel="canonical" href="${esc(canonical)}">`)
       .replace(/<meta name="description" content="[^"]*">/i, `<meta name="description" content="${esc(description)}">`)
       .replace("</head>", `${homepageSeo}</head>`);
-    const cars = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0);
+    const cars = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && hasDisplayablePrice(car));
     const content = cars.map((car) => {
       const title = `${car.year} ${car.make} ${car.model}${car.trim ? ` ${car.trim}` : ""}`;
       const href = `/cars/${encodeURIComponent(car.id)}`;
-      return `<article><a href="${esc(href)}"><img src="${esc(mainCarImage(car))}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>KSh ${Number(car.price).toLocaleString("en-KE")} · ${Number(car.mileage).toLocaleString("en-KE")} km · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
+      return `<article><a href="${esc(href)}"><img src="${esc(mainCarImage(car))}" alt="${esc(`${title} exterior`)}" width="480" loading="lazy"><h3>${esc(title)}</h3></a><p>${Number(car.price) === 0 ? "Ask for price" : `KSh ${Number(car.price).toLocaleString("en-KE")}`} · ${Number(car.mileage) === 0 ? "Inquire about mileage" : `${Number(car.mileage).toLocaleString("en-KE")} km`} · ${esc(car.status === "In Stock" ? "Available" : car.status)}</p><p>${esc(car.description || "Contact Tristar Motors in Nairobi to arrange a viewing.")}</p></article>`;
     }).join("");
     html = html.replace(/(<div class="car-grid" id="car-grid"[^>]*>)[\s\S]*?(<\/div>)/, `$1${content}$2`);
     html = html.replace("</body>", `<noscript><section><h2>Cars for sale in Nairobi</h2>${content}</section></noscript></body>`);
@@ -452,7 +457,7 @@ export function createInventoryApi(inventory, {
       }
       if (staticDirectory && (request.method === "GET" || request.method === "HEAD") && url.pathname === "/sitemap.xml") {
         const origin = siteOrigin(request);
-        const urls = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && Number(car.price) > 0).map((car) => `<url><loc>${esc(origin)}/cars/${encodeURIComponent(car.id)}</loc></url>`).join("");
+        const urls = (await inventory.list()).filter((car) => car.make === "Mercedes-Benz" && hasDisplayablePrice(car)).map((car) => `<url><loc>${esc(origin)}/cars/${encodeURIComponent(car.id)}</loc></url>`).join("");
         const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${esc(origin)}/</loc></url>${urls}</urlset>`;
         response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" });
         response.end(request.method === "HEAD" ? undefined : xml);
@@ -472,7 +477,7 @@ export function createInventoryApi(inventory, {
         let id = "";
         try { id = decodeURIComponent(vehicleRoute[1]); } catch {}
         const car = await inventory.get(id);
-        if (!car || car.make !== "Mercedes-Benz" || !(Number(car.price) > 0)) {
+        if (!car || car.make !== "Mercedes-Benz" || !hasDisplayablePrice(car)) {
           response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" });
           response.end("Vehicle not found");
           return;
@@ -560,6 +565,13 @@ export function createInventoryApi(inventory, {
         return;
       }
       const instagramReviewMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)\/(approve|reject)$/);
+      const instagramApprovalProgressMatch = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)\/approval-progress$/);
+      if (instagramApprovalProgressMatch && request.method === "GET") {
+        const progress = approvalProgress.get(instagramApprovalProgressMatch[1]);
+        response.setHeader("Cache-Control", "no-store");
+        send(response, 200, progress || { phase: "Preparing approval", percent: 2, complete: 0, total: 0 });
+        return;
+      }
       if (instagramReviewMatch && request.method === "POST") {
         const [, mediaId, action] = instagramReviewMatch;
         const draft = await inventory.getInstagramDraft(mediaId);
@@ -570,21 +582,34 @@ export function createInventoryApi(inventory, {
           return;
         }
         const value = await readJson(request);
-        const car = { ...value.car, id: `instagram-${mediaId.toLowerCase()}`, status: "In Stock", make: String(value.car?.make || "").trim(), model: String(value.car?.model || "").trim(), year: Number(value.car?.year), price: Number(value.car?.price), mileage: Number(value.car?.mileage), description: String(value.car?.description || draft.caption || "").trim() };
-        if (!(car.price > 0)) { send(response, 400, { error: "Set a confirmed asking price before publishing this listing" }); return; }
+        const car = { ...value.car, id: `instagram-${mediaId.toLowerCase()}`, status: "In Stock", make: String(value.car?.make || "").trim(), model: String(value.car?.model || "").trim(), year: Number(value.car?.year), price: value.car?.price == null ? 0 : Number(value.car.price), mileage: value.car?.mileage == null ? 0 : Number(value.car.mileage), description: String(value.car?.description || draft.caption || "").trim() };
+        if (!Number.isFinite(Number(car.price)) || Number(car.price) < 0) { send(response, 400, { error: "Set a valid asking price before publishing this listing" }); return; }
         if (!Array.isArray(draft.imageUrls) || !draft.imageUrls.length) { send(response, 400, { error: "This post has no usable image; edit the listing manually before publishing" }); return; }
         if (await inventory.get(car.id)) { send(response, 409, { error: "This Instagram post already has a vehicle listing" }); return; }
+        const total = draft.imageUrls.length;
+        let completed = 0;
+        approvalProgress.set(mediaId, { phase: "Preparing photos", percent: 5, complete: 0, total });
         const imageUrls = objectStorage?.configured
-          ? await Promise.all(draft.imageUrls.map((image) => validInstagramImageUrl(image) ? importInstagramImage(image, objectStorage) : image))
+          ? await Promise.all(draft.imageUrls.map(async (image) => {
+            const uploaded = validInstagramImageUrl(image) ? await importInstagramImage(image, objectStorage) : image;
+            completed += 1;
+            approvalProgress.set(mediaId, { phase: "Copying photos to vehicle storage", percent: 10 + Math.floor(completed / total * 75), complete: completed, total });
+            return uploaded;
+          }))
           : draft.imageUrls;
+        if (!objectStorage?.configured) approvalProgress.set(mediaId, { phase: "Preparing listing", percent: 80, complete: total, total });
         car.image = imageUrls[0];
         car.galleryByCategory = { front: [imageUrls[0]], other: imageUrls.slice(1) };
         car.gallery = imageUrls;
         const error = validateCar(car, car.id);
         if (error) { send(response, 400, { error }); return; }
         const saved = await inventory.save(car);
+        approvalProgress.set(mediaId, { phase: "Saving listing", percent: 92, complete: total, total });
         const published = await inventory.setInstagramDraftStatus(mediaId, "published", car.id);
         if (!published) { send(response, 409, { error: "The draft was already reviewed; reload the page to see its current status" }); return; }
+        approvalProgress.set(mediaId, { phase: "Approval complete", percent: 100, complete: total, total, done: true });
+        const cleanup = setTimeout(() => approvalProgress.delete(mediaId), 60_000);
+        cleanup.unref?.();
         send(response, 201, { car: saved, published: true });
         return;
       }
@@ -709,6 +734,13 @@ export function createInventoryApi(inventory, {
       }
       send(response, 404, { error: "Endpoint not found" });
     } catch (error) {
+      const failedApproval = url.pathname.match(/^\/api\/instagram\/drafts\/([A-Za-z0-9_-]+)\/approve$/);
+      if (failedApproval) {
+        const previous = approvalProgress.get(failedApproval[1]) || {};
+        approvalProgress.set(failedApproval[1], { ...previous, phase: "Approval stopped", error: error.status ? error.message : "The inventory service failed", done: true });
+        const cleanup = setTimeout(() => approvalProgress.delete(failedApproval[1]), 60_000);
+        cleanup.unref?.();
+      }
       send(response, error.status || 500, { error: error.status ? error.message : "The local inventory service failed" });
       if (!error.status) console.error("Inventory API error:", error);
     }
